@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: rydon-ai-2
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: RYDON_SECRET_KEY
+        generateValue: true
+      - key: RYDON_API_BASE
+        value: https://api.groq.com/openai/v1
+      - key: RYDON_MODEL
+        value: llama-3.3-70b-versatile
+      - key: RYDON_API_KEY
+        sync: false
