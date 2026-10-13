@@ -1,12 +1,16 @@
 {
+  "id": "/",
   "name": "RYDON AI 2.0",
   "short_name": "RYDON AI",
   "description": "Your personal AI assistant for chat, voice, documents and web search.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#212121",
   "theme_color": "#212121",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/static/rydon-icon.svg",
