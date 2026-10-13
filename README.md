@@ -51,3 +51,24 @@ The app displays a copyright notice and includes `COPYRIGHT.txt` and `docs/OWNER
 - This starter has no user accounts or shared cloud conversation database. Do not treat it as a medical, financial, or other high-stakes service.
 - The hosting platform may sleep on a free tier and take time to wake. Check the host's current plan limits.
 - Use a strong secret key in production and keep API keys only in the hosting provider's environment settings.
+
+
+## Embed RYDON AI on another website
+
+You can add the hosted RYDON AI chat panel to a site that allows iframes. Replace the dimensions to fit your page:
+
+```html
+<iframe
+  src="https://rydon-ai-2.onrender.com/embed"
+  title="Chat with RYDON AI 2.0"
+  width="100%"
+  height="560"
+  style="border:0;border-radius:14px;max-width:480px"
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allow="microphone">
+</iframe>
+```
+
+The embedded panel uses the same hosted chat API as the main site, so the AI provider must be configured on Render. The iframe is served from RYDON AI's domain; it does not give the host website access to the user's chat content. For public production use, monitor API usage and add rate limiting/abuse protection before sharing widely. Embedding may be restricted by the other website's own security policy.
+
