@@ -118,7 +118,11 @@
         : 'No saved memories. Start a message with “Remember that …” to save a fact.';
     }
     function rememberFromMessage(message) {
-      const match = message.match(/^\\s*(?:please\\s+)?remember(?:\\s+(?:that|this))?\\s*[:\\-]?\\s+(.+)/i);
+      const trimmed = message.trim();
+      const lower = trimmed.toLowerCase();
+      const start = lower.startsWith('please remember ') ? 16 : (lower.startsWith('remember ') ? 9 : -1);
+      if (start < 0) return;
+      const fact = trimmed.slice(start).trim().slice(0, 500);
       if (!match) return;
       const fact = match[1].trim().slice(0, 500);
       if (!fact) return;
