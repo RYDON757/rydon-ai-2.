@@ -1,5 +1,3 @@
-import urllib.request
-import urllib.error
 from flask import Flask, render_template, request, jsonify, session
 from pathlib import Path
 import os, datetime, ast, operator, json, urllib.request, urllib.error
@@ -65,99 +63,74 @@ def local_reply(message, memory):
         except ZeroDivisionError: return 'You cannot divide by zero.'
         except Exception: return 'I could not calculate that. Try something like: calculate 25 * 4'
     return None
-def ask_hosted_model(message, history, memory):
-    messages = [{'role': 'system', 'content': (
-        'You are RYDON AI 2.0, a friendly, helpful personal assistant. '
-        'Be clear and practical. The user may prefer casual English or '
-        'Swahili/Sheng; adapt naturally. Known user name: '
-        + (memory.get('user_name') or 'not provided') + '. '
-        'Do not claim to remember details that are not present in this '
-        'conversation or saved memory.'
-    )}]
+ def ask_hosted_model(message, history, memory):
+    import os
+    import json
+    import urllib.request
+    import urllib.error
 
-    for item in history[-12:]:
-        if (isinstance(item, dict)
-                and item.get('role') in ('user', 'assistant')
-                and isinstance(item.get('content'), str)):
-            messages.append({
-                'role': item['role'],
-                'content': item['content'][:4000]
-            })
+    api_key = os.environ.get("GROQ_API_KEY")
+    model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+    url = "https://api.groq.com/openai/v1/chat/completions"
 
-    messages.append({
-        'role': 'user',
-        'content': message[:4000]
-    })
+    if not api_key:
+        return "Configuration error: GROQ_API_KEY is missing in Render."
 
-    payload = json.dumps({
-        'model': MODEL,
-        'messages': messages,
-        'temperature': 0.7
-    }).encode()
+    messages = [{
+        "role": "system",
+        "content": (
+            "You are RYDON AI 2.0, a friendly, helpful personal assistant. "
+            "Be clear and practical. The user may prefer casual English or "
+            "Swahili/Sheng; adapt naturally. Known user name: "
+            + (memory.get("user_name") or "not provided") + ". "
+            "Do not claim to remember details that are not present in this "
+            "conversation or saved memory."
+        )
+    }]
+
+    if isinstance(history, list):
+        for item in history[-12:]:
+            if (
+                isinstance(item, dict)
+                and item.get("role") in ("user", "assistant")
+                and isinstance(item.get("content"), str)
+            ):
+                messages.append({
+                    "role": item["role"],
+                    "content": item["content"]
+                })
+
+    messages.append({"role": "user", "content": message})
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7
+    }
 
     req = urllib.request.Request(
-        API_BASE + '/chat/completions',
-        data=payload,
+        url,
+        data=json.dumps(payload).encode("utf-8"),
         headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + API_KEY
+            "Authorization": "Bearer " + api_key,
+            "Content-Type": "application/json"
         },
-        method='POST'
+        method="POST"
     )
 
-   
-req = urllib.request.Request(
-    url,
-    data=json.dumps(payload).encode("utf-8"),
-    headers={
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    },
-    method="POST",
-)
+    try:
+        with urllib.request.urlopen(req, timeout=90) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            return result["choices"][0]["message"]["content"]
 
-except urllib.error.HTTPError as exc:
-    detail = exc.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        print("Groq HTTP error:", error.code, details)
+        return f"AI provider error ({error.code}). Check Render logs."
 
-    if exc.code == 401:
-        message = (
-            "Groq authentication failed (401). "
-            "Check GROQ_API_KEY in Render Environment."
-        )
-    elif exc.code == 403:
-        message = (
-            "Groq rejected the request (403). "
-            "Check API key permissions, project access, "
-            "and model access. Provider details: "
-            + detail[:500]
-        )
-    elif exc.code == 404:
-        message = (
-            "Groq endpoint or model was not found (404). "
-            "Check the API URL and GROQ_MODEL."
-        )
-    elif exc.code == 429:
-        message = (
-            "Groq rate limit or quota reached (429). "
-            "Check your Groq usage and limits."
-        )
-    else:
-        message = (
-            f"Groq returned HTTP {exc.code}: "
-            + detail[:500]
-        )
-
-    raise RuntimeError(message) from exc
-
-except urllib.error.URLError as exc:
-    raise RuntimeError(
-        f"Could not connect to Groq: {exc.reason}"
-    ) from exc
-
-except TimeoutError as exc:
-    raise RuntimeError(
-        "Groq request timed out. Please try again."
-    ) from exc
+    except Exception as error:
+        print("AI request failed:", repr(error))
+        return "RYDON AI couldn't connect right now. Please try again."
 def ask_ollama(message, history, memory):
     messages = [{'role':'system','content':(
         'You are RYDON AI 2.0, a friendly, helpful personal assistant. Be clear and practical. '
