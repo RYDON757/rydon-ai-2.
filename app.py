@@ -1,5 +1,7 @@
 
 from flask import Flask, render_template, request, jsonify, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 import io
 import datetime
@@ -18,12 +20,29 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax"
 )
 
-if (
-    os.environ.get("RENDER")
-    or os.environ.get("RAILWAY_ENVIRONMENT")
-    or os.environ.get("PRODUCTION") == "1"
-):
-    app.config["SESSION_COOKIE_SECURE"] = True
+# Render terminates HTTPS in front of Gunicorn. Trust the single proxy hop
+# so rate limits can use the visitor IP from X-Forwarded-For.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
+# Set RATELIMIT_STORAGE_URI to a shared Redis/Valkey URL for consistent limits
+# across Gunicorn workers and instances. memory:// is only a fallback for
+# basic protection; its counters are process-local and reset on restart.
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
+    strategy="fixed-window",
+    headers_enabled=True,
+    default_limits=[],
+)
+
+@app.errorhandler(429)
+def rate_limit_exceeded(error):
+    return jsonify({
+        "error": "rate_limited",
+        "reply": "Too many requests in a short time. Please wait a little and try again."
+    }), 429
 
 # Ollama settings
 MODEL = os.environ.get("RYDON_MODEL", "qwen2.5:3b")
@@ -506,6 +525,8 @@ def status():
 
 
 @app.post("/api/upload")
+@limiter.limit("5 per minute")
+@limiter.limit("30 per day")
 def upload_document():
     uploaded = request.files.get("file")
     if not uploaded or not uploaded.filename:
@@ -543,6 +564,8 @@ def upload_document():
 
 
 @app.post("/api/chat")
+@limiter.limit("10 per minute")
+@limiter.limit("100 per day")
 def chat():
     body = request.get_json(silent=True) or {}
     message = str(body.get("message", "")).strip()
@@ -622,6 +645,8 @@ def chat():
 
 @app.post("/api/memory")
 @app.post("/api/update-memory")
+@limiter.limit("20 per minute")
+@limiter.limit("200 per day")
 def update_memory():
     body = request.get_json(silent=True) or {}
     name = str(body.get("user_name", "")).strip()[:80]
