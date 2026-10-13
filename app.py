@@ -589,6 +589,122 @@ def studio_image():
         return jsonify({"error": "Could not reach the image provider. Check its API URL."}), 502
 
 
+@app.post("/api/studio/edit")
+@limiter.limit("3 per minute")
+@limiter.limit("15 per day")
+def studio_edit():
+    """Edit an uploaded image without storing it on the server."""
+    uploaded = request.files.get("image")
+    prompt = str(request.form.get("prompt", "")).strip()[:2000]
+    if not uploaded or not uploaded.filename:
+        return jsonify({"error": "Choose a photo to edit first."}), 400
+    if not prompt:
+        return jsonify({"error": "Describe how you want the photo edited."}), 400
+
+    raw = uploaded.read(5 * 1024 * 1024 + 1)
+    if not raw:
+        return jsonify({"error": "The selected image is empty."}), 400
+    if len(raw) > 5 * 1024 * 1024:
+        return jsonify({"error": "Please choose an image smaller than 5 MB."}), 413
+
+    filename = uploaded.filename.lower()
+    if filename.endswith((".jpg", ".jpeg")) and raw.startswith(b"\xff\xd8\xff"):
+        image_mime, safe_name = "image/jpeg", "source.jpg"
+    elif filename.endswith(".png") and raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        image_mime, safe_name = "image/png", "source.png"
+    elif filename.endswith(".webp") and raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
+        image_mime, safe_name = "image/webp", "source.webp"
+    else:
+        return jsonify({"error": "Use a valid JPEG, PNG, or WebP image."}), 400
+
+    base = (
+        os.environ.get("RYDON_IMAGE_EDIT_API_BASE", "")
+        or os.environ.get("RYDON_IMAGE_API_BASE", "")
+    ).strip().rstrip("/")
+    key = (
+        os.environ.get("RYDON_IMAGE_EDIT_API_KEY", "")
+        or os.environ.get("RYDON_IMAGE_API_KEY", "")
+    ).strip()
+    model = (
+        os.environ.get("RYDON_IMAGE_EDIT_MODEL", "")
+        or os.environ.get("RYDON_IMAGE_MODEL", "")
+    ).strip()
+    if not base or not key or not model:
+        return jsonify({
+            "error": (
+                "Photo editing is not configured yet. In Render, set "
+                "RYDON_IMAGE_EDIT_API_BASE, RYDON_IMAGE_EDIT_API_KEY and "
+                "RYDON_IMAGE_EDIT_MODEL to an image-editing API that supports "
+                "the OpenAI-compatible /images/edits endpoint. Keep keys private."
+            )
+        }), 503
+
+    boundary = "----RYDONImageEditBoundary7MA4YWxkTrZu0gW"
+    parts = []
+    fields = {
+        "model": model,
+        "prompt": prompt,
+        "n": "1",
+        "size": "1024x1024",
+    }
+    for name, value in fields.items():
+        parts.extend([
+            ("--" + boundary + "\r\n").encode(),
+            ('Content-Disposition: form-data; name="' + name + '"\r\n\r\n').encode(),
+            value.encode("utf-8"),
+            b"\r\n",
+        ])
+    parts.extend([
+        ("--" + boundary + "\r\n").encode(),
+        ('Content-Disposition: form-data; name="image"; filename="' + safe_name + '"\r\n').encode(),
+        ("Content-Type: " + image_mime + "\r\n\r\n").encode(),
+        raw,
+        b"\r\n",
+        ("--" + boundary + "--\r\n").encode(),
+    ])
+    body = b"".join(parts)
+    req = urllib.request.Request(
+        base + "/images/edits",
+        data=body,
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "multipart/form-data; boundary=" + boundary,
+            "User-Agent": "RYDON-AI/2.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        items = data.get("data", [])
+        if not items or not isinstance(items[0], dict):
+            return jsonify({"error": "The image provider returned no edited image."}), 502
+        item = items[0]
+        image_url = item.get("url", "")
+        b64_json = item.get("b64_json", "")
+        if not image_url and not b64_json:
+            return jsonify({"error": "The provider response did not include an edited image."}), 502
+        return jsonify({
+            "ok": True,
+            "url": image_url,
+            "b64_json": b64_json,
+            "mime_type": "image/png",
+        })
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:500]
+        app.logger.warning("Image edit provider HTTP %s: %s", error.code, detail)
+        if error.code in (401, 403):
+            message = "The image provider rejected the key or model access. Check Render environment settings."
+        elif error.code == 429:
+            message = "The image provider quota or rate limit was reached. Try later or check billing."
+        else:
+            message = "Image editing provider returned HTTP " + str(error.code) + ". Check its API compatibility and logs."
+        return jsonify({"error": message}), 502
+    except Exception:
+        app.logger.exception("Studio image editing failed")
+        return jsonify({"error": "Could not reach the image-editing provider. Check its API URL and logs."}), 502
+
+
 @app.post("/api/studio/export")
 @limiter.limit("20 per minute")
 def studio_export():
