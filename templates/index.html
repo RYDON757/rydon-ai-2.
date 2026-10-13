@@ -98,6 +98,32 @@
       .msg-row{gap:9px;margin-bottom:20px}.msg-content{font-size:.93rem}
       .legal{font-size:.64rem}.tool-btn,.file-label{padding:6px 8px}
     }
+
+    .account-btn{border:1px solid #3d554e;background:#17372f;color:#baf3df;border-radius:10px;padding:8px 11px;font-size:.82rem;white-space:nowrap}
+    .account-btn:hover{background:#21473c}
+    .modal-backdrop{position:fixed;inset:0;z-index:100;background:#000b;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+    .modal-backdrop[hidden]{display:none}
+    .account-modal{width:min(760px,100%);max-height:min(90dvh,900px);overflow:auto;background:#1f1f1f;border:1px solid #444;border-radius:20px;box-shadow:0 24px 90px #0009;padding:22px}
+    .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .modal-head h2{margin:0;font-size:1.35rem}.modal-head p{margin:5px 0 0;color:#aaa;font-size:.88rem}
+    .modal-close{border:1px solid #444;background:#292929;color:#fff;border-radius:9px;padding:7px 11px}
+    .account-tabs{display:flex;gap:8px;margin:16px 0}
+    .account-tab{flex:1;border:1px solid #444;background:#292929;color:#ddd;border-radius:10px;padding:10px}
+    .account-tab.active{background:#17372f;border-color:#10a37f;color:#baf3df}
+    .account-field{display:block;width:100%;margin:10px 0 14px;background:#151515;border:1px solid #444;border-radius:10px;color:white;padding:12px;font:inherit}
+    .account-form label{font-size:.85rem;color:#ddd}
+    .account-primary{border:0;background:#10a37f;color:#fff;border-radius:10px;padding:11px 14px;font-weight:700;width:100%}
+    .account-primary:disabled{opacity:.55;cursor:wait}
+    .account-message{min-height:1.5em;color:#baf3df;font-size:.85rem;margin:10px 0}
+    .account-message.error{color:#ffb4b4}
+    .plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+    .plan-card{display:flex;flex-direction:column;gap:10px;border:1px solid #414141;background:#262626;border-radius:15px;padding:15px;min-width:0}
+    .plan-card.featured{border-color:#10a37f;background:#1d302b}
+    .plan-card h3{margin:0;font-size:1.05rem}.plan-price{font-size:1.2rem;font-weight:750}.plan-card p,.plan-card li{font-size:.82rem;color:#bbb;line-height:1.5}
+    .plan-card ul{padding-left:18px;margin:0;flex:1}.plan-card button{margin-top:auto}
+    .account-summary{border:1px solid #414141;background:#262626;border-radius:13px;padding:14px;margin:12px 0}
+    .account-summary strong{display:block;font-size:1rem}.account-summary span{color:#aaa;font-size:.84rem}
+    @media(max-width:650px){.plan-grid{grid-template-columns:1fr}.account-modal{padding:16px}.top-actions .account-btn{font-size:.74rem;padding:7px 8px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -113,6 +139,7 @@
     <div class="section-label">Recent</div>
     <div id="chatList"></div>
     <div class="sidebar-bottom">
+      <button class="side-btn" id="plansButton" type="button"><span class="glyph">◇</span> Subscription plans</button>
       <button class="side-btn" id="memory" type="button"><span class="glyph">✳</span> Saved memory</button>
       <a class="side-btn" href="/studio" style="text-decoration:none"><span class="glyph">✦</span> Creative Studio</a>
       <button class="side-btn" id="settings" type="button"><span class="glyph">⚙</span> Settings & tools</button>
@@ -125,7 +152,7 @@
         <button class="icon-btn mobile-menu" id="openSidebar" type="button" aria-label="Open sidebar">☰</button>
         <div><div class="top-title">RYDON AI <span style="color:#999;font-weight:450">2.0</span></div><div class="top-sub">Your personal AI assistant</div></div>
       </div>
-      <div class="top-actions"><span class="status-pill" id="connectionBadge">● Ready</span><button class="icon-btn" id="clear" type="button" title="Clear current chat" aria-label="Clear current chat">⌫</button></div>
+      <div class="top-actions"><button class="account-btn" id="accountButton" type="button">Log in / Create account</button><span class="status-pill" id="connectionBadge">● Ready</span><button class="icon-btn" id="clear" type="button" title="Clear current chat" aria-label="Clear current chat">⌫</button></div>
     </header>
     <section id="chat" aria-live="polite"></section>
     <section class="composer-area">
@@ -146,6 +173,56 @@
     </section>
     <footer class="legal">RYDON AI can make mistakes. Check important information. · <a href="/copyright">© 2026 IPOLITE SANDE ASANGAI · Copyright &amp; ownership</a></footer>
   </main>
+</div>
+<div class="modal-backdrop" id="accountBackdrop" hidden>
+  <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+    <div class="modal-head">
+      <div><h2 id="accountModalTitle">Your RYDON account</h2><p>Sign in, create an account, or manage your subscription.</p></div>
+      <button class="modal-close" id="closeAccountModal" type="button" aria-label="Close account window">✕</button>
+    </div>
+    <div id="accountSignedOut">
+      <div class="account-tabs">
+        <button class="account-tab active" id="showLogin" type="button">Log in</button>
+        <button class="account-tab" id="showRegister" type="button">Create account</button>
+      </div>
+      <form class="account-form" id="accountForm">
+        <div id="registerNameWrap" hidden><label for="accountName">Full name</label><input class="account-field" id="accountName" name="name" autocomplete="name" maxlength="80" placeholder="Your name"></div>
+        <label for="accountEmail">Email address</label><input class="account-field" id="accountEmail" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
+        <label for="accountPassword">Password</label><input class="account-field" id="accountPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="256" required placeholder="At least 10 characters">
+        <button class="account-primary" id="accountSubmit" type="submit">Log in</button>
+      </form>
+    </div>
+    <div id="accountSignedIn" hidden>
+      <div class="account-summary"><strong id="accountDisplayName">Welcome back</strong><span id="accountDisplayEmail"></span><p id="accountPlanStatus"></p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="account-primary" id="managePlans" type="button" style="flex:1">View plans</button><button class="modal-close" id="logoutButton" type="button">Log out</button></div>
+    </div>
+    <div class="account-message" id="accountMessage" role="status" aria-live="polite"></div>
+    <div id="subscriptionArea">
+      <h3 style="margin:18px 0 4px">Choose your plan</h3>
+      <p style="color:#aaa;font-size:.85rem;margin:0">Choose Free or a paid subscription. Paid access activates only after the payment provider confirms it.</p>
+      <div class="plan-grid">
+        <article class="plan-card">
+          <h3>Free</h3><div class="plan-price">KSh 0</div>
+          <p>Get started with core RYDON features.</p>
+          <ul><li>Basic AI chat, subject to availability</li><li>Creative Studio access</li><li>Usage limits apply</li></ul>
+          <button class="modal-close plan-action" data-plan="free" type="button">Use Free</button>
+        </article>
+        <article class="plan-card featured">
+          <h3>Plus</h3><div class="plan-price">Monthly subscription</div>
+          <p>For regular study, writing and creative work.</p>
+          <ul><li>Higher-tier plan when configured</li><li>Subscription managed securely</li><li>Provider quotas still apply</li></ul>
+          <button class="account-primary plan-action" data-plan="plus" type="button">Choose Plus</button>
+        </article>
+        <article class="plan-card">
+          <h3>Pro</h3><div class="plan-price">Monthly subscription</div>
+          <p>For heavier personal and professional use.</p>
+          <ul><li>Highest RYDON plan tier when configured</li><li>Subscription managed securely</li><li>Provider quotas still apply</li></ul>
+          <button class="account-primary plan-action" data-plan="pro" type="button">Choose Pro</button>
+        </article>
+      </div>
+      <p style="color:#888;font-size:.78rem">Important: paid plan prices and feature limits must be configured by the owner in Stripe before checkout is enabled. No payment is taken by this page itself.</p>
+    </div>
+  </section>
 </div>
 <script>
   const chat = document.getElementById('chat');
@@ -321,6 +398,115 @@
     if(!confirm('Clear this conversation?'))return;
     conversations=conversations.filter(c=>c.id!==activeId);activeId=null;history=[];documentContext='';fileInput.value='';fileStatus.textContent='No document attached';persist();renderChatList();showWelcome();status.textContent='Conversation cleared.';
   });
+  const accountBackdrop = document.getElementById('accountBackdrop');
+  const accountButton = document.getElementById('accountButton');
+  const accountMessage = document.getElementById('accountMessage');
+  const accountForm = document.getElementById('accountForm');
+  let authMode = 'login';
+  let currentAccount = null;
+  function showAccountMessage(message, isError=false){
+    accountMessage.textContent = message || '';
+    accountMessage.classList.toggle('error', !!isError);
+  }
+  function setAuthMode(mode){
+    authMode = mode;
+    const registering = mode === 'register';
+    document.getElementById('showLogin').classList.toggle('active', !registering);
+    document.getElementById('showRegister').classList.toggle('active', registering);
+    document.getElementById('registerNameWrap').hidden = !registering;
+    document.getElementById('accountName').required = registering;
+    document.getElementById('accountPassword').autocomplete = registering ? 'new-password' : 'current-password';
+    document.getElementById('accountPassword').placeholder = registering ? 'Create a password (10+ characters)' : 'Your password';
+    document.getElementById('accountSubmit').textContent = registering ? 'Create account' : 'Log in';
+    document.getElementById('subscriptionArea').hidden = false;
+    showAccountMessage('');
+  }
+  function openAccountModal(showPlans=false){
+    accountBackdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    if(showPlans) document.getElementById('subscriptionArea').scrollIntoView({behavior:'smooth',block:'start'});
+    showAccountMessage('');
+    refreshAccount();
+  }
+  function closeAccountModal(){
+    accountBackdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  async function refreshAccount(){
+    try{
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      currentAccount = data.account || null;
+      document.getElementById('accountSignedOut').hidden = !!currentAccount;
+      document.getElementById('accountSignedIn').hidden = !currentAccount;
+      document.getElementById('accountButton').textContent = currentAccount ? (currentAccount.name.split(' ')[0]+' · Account') : 'Log in / Create account';
+      if(currentAccount){
+        document.getElementById('accountDisplayName').textContent = 'Welcome, '+currentAccount.name;
+        document.getElementById('accountDisplayEmail').textContent = currentAccount.email;
+        document.getElementById('accountPlanStatus').textContent = 'Plan: '+currentAccount.plan.toUpperCase()+' · Status: '+currentAccount.subscription_status;
+      }
+    }catch(_){accountButton.textContent='Account';}
+  }
+  accountButton.addEventListener('click',()=>openAccountModal(false));
+  document.getElementById('plansButton').addEventListener('click',()=>openAccountModal(true));
+  document.getElementById('closeAccountModal').addEventListener('click',closeAccountModal);
+  accountBackdrop.addEventListener('click',event=>{if(event.target===accountBackdrop)closeAccountModal()});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!accountBackdrop.hidden)closeAccountModal()});
+  document.getElementById('showLogin').addEventListener('click',()=>setAuthMode('login'));
+  document.getElementById('showRegister').addEventListener('click',()=>setAuthMode('register'));
+  document.getElementById('managePlans').addEventListener('click',()=>document.getElementById('subscriptionArea').scrollIntoView({behavior:'smooth',block:'start'}));
+  document.getElementById('logoutButton').addEventListener('click',async()=>{
+    try{await fetch('/api/auth/logout',{method:'POST'});currentAccount=null;await refreshAccount();setAuthMode('login');showAccountMessage('You have logged out.');}
+    catch(_){showAccountMessage('Could not log out right now.',true)}
+  });
+  accountForm.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const submit=document.getElementById('accountSubmit');
+    submit.disabled=true;showAccountMessage(authMode==='register'?'Creating your account…':'Logging in…');
+    const body={email:document.getElementById('accountEmail').value.trim(),password:document.getElementById('accountPassword').value};
+    if(authMode==='register')body.name=document.getElementById('accountName').value.trim();
+    try{
+      const response=await fetch(authMode==='register'?'/api/auth/register':'/api/auth/login',{
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+      });
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'Account request failed.');
+      accountForm.reset();await refreshAccount();setAuthMode('login');
+      showAccountMessage(authMode==='register'?'Account created successfully. You are logged in.':'You are logged in.');
+    }catch(error){showAccountMessage(error.message||'Could not complete the account request.',true)}
+    finally{submit.disabled=false}
+  });
+  document.querySelectorAll('.plan-action').forEach(button=>{
+    button.addEventListener('click',async()=>{
+      const plan=button.dataset.plan;
+      if(!currentAccount){
+        setAuthMode('register');
+        showAccountMessage('Create an account or log in before selecting a plan.');
+        document.getElementById('accountEmail').focus();
+        return;
+      }
+      button.disabled=true;
+      showAccountMessage(plan==='free'?'Updating your plan…':'Preparing secure checkout…');
+      try{
+        const response=await fetch(plan==='free'?'/api/account/plan':'/api/billing/checkout',{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})
+        });
+        const data=await response.json();
+        if(!response.ok)throw new Error(data.error||'Could not update your subscription.');
+        if(plan==='free'){
+          currentAccount=data.account;await refreshAccount();showAccountMessage('Your account is on the Free plan.');
+        }else if(data.url){
+          window.location.assign(data.url);
+        }
+      }catch(error){showAccountMessage(error.message||'Could not update your subscription.',true)}
+      finally{button.disabled=false}
+    });
+  });
+  refreshAccount();
+  const subscriptionResult = new URLSearchParams(location.search).get('subscription');
+  if(subscriptionResult==='success')openAccountModal(true);
+  else if(subscriptionResult==='cancelled')openAccountModal(true);
+  if(subscriptionResult)history.replaceState({},'',location.pathname);
   renderChatList();
   if(conversations.length){const newest=conversations.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0];loadConversation(newest.id)}else{showWelcome()}
   if('serviceWorker'in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/service-worker.js').catch(()=>{}))}
