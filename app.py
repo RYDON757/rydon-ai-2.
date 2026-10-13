@@ -16,6 +16,7 @@ import re
 import hmac
 import hashlib
 import time
+from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -798,11 +799,19 @@ AUTH_DB_PATH = os.environ.get(
 os.makedirs(os.path.dirname(os.path.abspath(AUTH_DB_PATH)), exist_ok=True)
 
 
+@contextmanager
 def auth_db():
     connection = sqlite3.connect(AUTH_DB_PATH, timeout=15)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-    return connection
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def init_auth_db():
