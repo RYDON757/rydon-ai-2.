@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, feat/security-hardening, feat/creative-studio]
   pull_request:
-    branches: [main]
+    branches: [main, feat/security-hardening]
 
 permissions:
   contents: read
