@@ -231,7 +231,8 @@ def ask_hosted_model(message, history, memory):
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Authorization": "Bearer " + API_KEY,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         },
         method="POST"
     )
