@@ -461,6 +461,22 @@ def index():
     )
 
 
+@app.get("/embed")
+def embed_widget():
+    """Standalone RYDON AI chat widget intended for iframe embedding."""
+    response = app.make_response(render_template("embed.html"))
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Content-Security-Policy"] = (
+        "frame-ancestors *; default-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "connect-src 'self'; img-src 'self' data:; "
+        "font-src 'self' data:"
+    )
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 @app.get("/copyright")
 def copyright_notice():
     return """<!doctype html>
