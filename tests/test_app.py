@@ -1,4 +1,5 @@
 import io
+import itertools
 import sys
 from pathlib import Path
 
@@ -6,10 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import app as rydon_app
 
+_client_ips = itertools.count(1)
+
 
 def client():
     rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret", RATELIMIT_ENABLED=False)
-    return rydon_app.app.test_client()
+    # Give each test client a distinct IP so rate-limit counters never leak between tests.
+    ip = "192.0.2." + str(next(_client_ips))
+    return rydon_app.app.test_client(environ_base={"REMOTE_ADDR": ip})
 
 
 def test_health_endpoint_returns_ok_and_security_headers():
