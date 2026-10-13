@@ -489,7 +489,7 @@ def chat():
         if not TAVILY_API_KEY:
             # Keep chat usable even when optional live search is not configured.
             web_search_note = (
-                "\\n\\nNote: Live web search is not configured yet, so this "
+                "\n\nNote: Live web search is not configured yet, so this "
                 "answer is based on the AI model's existing knowledge. "
                 "Add TAVILY_API_KEY in Render to enable live results."
             )
@@ -498,7 +498,7 @@ def chat():
             web_context = search_web(message)
             if not web_context:
                 web_search_note = (
-                    "\\n\\nNote: Live web search could not retrieve results "
+                    "\n\nNote: Live web search could not retrieve results "
                     "this time, so this answer may not reflect the latest information."
                 )
                 app.logger.warning("Web search returned no usable results.")
