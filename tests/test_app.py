@@ -121,3 +121,46 @@ def test_image_generation_explains_missing_provider(monkeypatch):
 
     assert response.status_code == 503
     assert "compatible provider" in response.get_json()["error"]
+
+
+
+def test_studio_edit_requires_photo():
+    response = client().post(
+        "/api/studio/edit",
+        data={"prompt": "Add dreadlocks"},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert "Choose a photo" in response.get_json()["error"]
+
+
+def test_studio_edit_rejects_fake_image():
+    response = client().post(
+        "/api/studio/edit",
+        data={
+            "prompt": "Add dreadlocks",
+            "image": (io.BytesIO(b"not really an image"), "photo.jpg"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert "valid JPEG, PNG, or WebP" in response.get_json()["error"]
+
+
+def test_studio_edit_explains_missing_provider(monkeypatch):
+    for name in (
+        "RYDON_IMAGE_EDIT_API_BASE", "RYDON_IMAGE_EDIT_API_KEY",
+        "RYDON_IMAGE_EDIT_MODEL", "RYDON_IMAGE_API_BASE",
+        "RYDON_IMAGE_API_KEY", "RYDON_IMAGE_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    response = client().post(
+        "/api/studio/edit",
+        data={
+            "prompt": "Add dreadlocks",
+            "image": (io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20), "photo.png"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 503
+    assert "RYDON_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
