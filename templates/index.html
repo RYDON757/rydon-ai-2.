@@ -62,9 +62,11 @@
     <button id="voice" type="button">🎙️ Speak</button>
     <button id="replyVoice" type="button">🔈 Voice replies: off</button>
     <button id="stopVoice" type="button">🔇 Stop voice</button>
+    <button id="memory" type="button">🧠 Memory</button>
     <button id="clear" type="button">Clear chat</button>
   </div>
   <p id="fileStatus" class="small">No document attached.</p>
+  <p id="memoryStatus" class="small">Saved memory stays in this browser.</p>
   <p id="status">Ready</p>
   <p class="small">Tip: Web search requires TAVILY_API_KEY in your Render environment. Voice input depends on browser support and microphone permission.</p>
   <script>
@@ -75,11 +77,18 @@
     const status = document.getElementById('status');
     const fileInput = document.getElementById('file');
     const fileStatus = document.getElementById('fileStatus');
+    const memoryStatus = document.getElementById('memoryStatus');
     const webSearch = document.getElementById('webSearch');
     const voiceButton = document.getElementById('voice');
     const replyVoiceButton = document.getElementById('replyVoice');
     const stopVoiceButton = document.getElementById('stopVoice');
     const STORAGE_KEY = 'rydon_ai_history_v2';
+    const MEMORY_KEY = 'rydon_ai_saved_memory_v1';
+    let savedMemory = [];
+    try {
+      const storedMemory = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
+      if (Array.isArray(storedMemory)) savedMemory = storedMemory.filter(x => typeof x === 'string').map(x => x.slice(0, 500)).slice(-30);
+    } catch (_) { savedMemory = []; }
     let history = [];
     let documentContext = '';
     let recognition = null;
@@ -103,6 +112,25 @@
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-60))); }
       catch (_) { status.textContent = 'Chat works, but browser storage is unavailable.'; }
     }
+    function renderMemoryStatus() {
+      memoryStatus.textContent = savedMemory.length
+        ? 'Saved memory: ' + savedMemory.length + ' item(s), stored only in this browser.'
+        : 'No saved memories. Start a message with “Remember that …” to save a fact.';
+    }
+    function rememberFromMessage(message) {
+      const match = message.match(/^\\s*(?:please\\s+)?remember(?:\\s+(?:that|this))?\\s*[:\\-]?\\s+(.+)/i);
+      if (!match) return;
+      const fact = match[1].trim().slice(0, 500);
+      if (!fact) return;
+      if (!savedMemory.some(item => item.toLowerCase() === fact.toLowerCase())) {
+        savedMemory.push(fact);
+        savedMemory = savedMemory.slice(-30);
+        try { localStorage.setItem(MEMORY_KEY, JSON.stringify(savedMemory)); }
+        catch (_) { status.textContent = 'Memory could not be saved in this browser.'; }
+      }
+      renderMemoryStatus();
+    }
+    renderMemoryStatus();
 
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
@@ -132,6 +160,7 @@
       e.preventDefault();
       const message = input.value.trim();
       if (!message) return;
+      rememberFromMessage(message);
       addMessage(message, 'user');
       input.value = '';
       send.disabled = true;
@@ -144,7 +173,8 @@
             message,
             history: history.slice(-24),
             document_context: documentContext,
-            web_search: webSearch.checked
+            web_search: webSearch.checked,
+            saved_memory: savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\\n')
           })
         });
         const data = await res.json();
@@ -205,8 +235,19 @@
       status.textContent = window.rydonSpeakReplies ? 'Spoken replies enabled.' : 'Spoken replies disabled.';
     });
 
+    document.getElementById('memory').addEventListener('click', () => {
+      const current = savedMemory.length ? savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\\n') : 'No saved memories yet.';
+      const action = prompt('Saved memory (stored only in this browser):\\n\\n' + current + '\\n\\nType CLEAR to delete all saved memories, or Cancel to keep them.');
+      if (action && action.trim().toUpperCase() === 'CLEAR') {
+        savedMemory = [];
+        localStorage.removeItem(MEMORY_KEY);
+        renderMemoryStatus();
+        status.textContent = 'Saved memory cleared.';
+      }
+    });
+
     document.getElementById('clear').addEventListener('click', () => {
-      if (!confirm('Clear this chat history from this browser?')) return;
+      if (!confirm('Clear this chat history? Saved memory will remain.')) return;
       history = [];
       documentContext = '';
       localStorage.removeItem(STORAGE_KEY);
