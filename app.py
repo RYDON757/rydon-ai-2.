@@ -516,6 +516,11 @@ def sitemap_xml():
     return Response(body, mimetype="application/xml")
 
 
+@app.get("/studio")
+def creative_studio():
+    return render_template("studio.html")
+
+
 @app.get("/")
 def index():
     return render_template(
