@@ -176,7 +176,7 @@
             history: history.slice(-24),
             document_context: documentContext,
             web_search: webSearch.checked,
-            saved_memory: savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\\n')
+            saved_memory: savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\n')
           })
         });
         const data = await res.json();
@@ -238,8 +238,8 @@
     });
 
     document.getElementById('memory').addEventListener('click', () => {
-      const current = savedMemory.length ? savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\\n') : 'No saved memories yet.';
-      const action = prompt('Saved memory (stored only in this browser):\\n\\n' + current + '\\n\\nType CLEAR to delete all saved memories, or Cancel to keep them.');
+      const current = savedMemory.length ? savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\n') : 'No saved memories yet.';
+      const action = prompt('Saved memory (stored only in this browser):\n\n' + current + '\n\nType CLEAR to delete all saved memories, or Cancel to keep them.');
       if (action && action.trim().toUpperCase() === 'CLEAR') {
         savedMemory = [];
         localStorage.removeItem(MEMORY_KEY);
