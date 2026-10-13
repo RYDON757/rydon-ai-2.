@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="application-name" content="RYDON AI 2.0">
+  <meta name="description" content="RYDON AI 2.0 — your personal AI assistant for chat, voice, documents and web search.">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="icon" href="/static/rydon-icon.svg" type="image/svg+xml">
   <title>RYDON AI 2.0</title>
   <style>
     :root { color-scheme: dark; }
@@ -69,6 +74,7 @@
   <p id="memoryStatus" class="small">Saved memory stays in this browser.</p>
   <p id="status">Ready</p>
   <p class="small">Tip: Web search requires TAVILY_API_KEY in your Render environment. Voice input depends on browser support and microphone permission.</p>
+  <footer class="small" style="text-align:center;margin:28px 0 12px;border-top:1px solid #2b3855;padding-top:14px;">© 2026 RYDON AI 2.0. All rights reserved. · <a href="/copyright" style="color:#9fbfff;">Copyright &amp; ownership</a></footer>
   <script>
     const chat = document.getElementById('chat');
     const form = document.getElementById('form');
@@ -259,6 +265,9 @@
       input.placeholder = 'Message RYDON AI...';
       status.textContent = 'Chat cleared.';
     });
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/static/service-worker.js').catch(() => {}));
+    }
   </script>
 </body>
 </html>

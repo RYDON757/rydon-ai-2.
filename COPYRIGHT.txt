@@ -1,0 +1,9 @@
+RYDON AI 2.0 — COPYRIGHT NOTICE
+Copyright © 2026 RYDON AI 2.0. All rights reserved.
+
+Project website: https://rydon-ai-2.onrender.com/
+Source repository: https://github.com/RYDON757/rydon-ai-2.
+
+This notice identifies the project brand and the year of this notice. It is not a government-issued registration certificate, does not by itself prove who owns every contribution, and does not claim a registered trademark. For official registration or a contract, identify the actual legal owner/author and confirm that any third-party code, libraries, fonts, icons, and services are properly licensed.
+
+Do not publish API keys, passwords, private customer data, or confidential deployment settings in project documents.
