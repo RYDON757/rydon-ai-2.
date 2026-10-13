@@ -146,13 +146,17 @@ def chat():
     try:
         reply = ask_hosted_model(message, history if isinstance(history,list) else [], memory) if API_KEY else ask_ollama(message, history if isinstance(history,list) else [], memory)
         return jsonify({'reply':reply, 'source':'hosted' if API_KEY else 'ollama'})
- except urllib.error.HTTPError as exc:
-    detail = exc.read().decode('utf-8', errors='replace')[:1000]
-    app.logger.warning("AI provider HTTP %s: %s", exc.code, detail)
-    return jsonify({
-        "reply": f"AI provider HTTP {exc.code}: {detail}"
-    }), 502
-@app.post('/api/memory')
+
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='replace')[:1000]
+        app.logger.warning(
+            "AI provider HTTP %s: %s",
+            exc.code,
+            detail
+        )
+        return jsonify({
+            "reply": f"AI provider returned HTTP {exc.code}. Check Render logs for details."
+        }), 502
 def update_memory():
     body = request.get_json(silent=True) or {}
     name = str(body.get('user_name','')).strip()[:80]
