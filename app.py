@@ -17,8 +17,25 @@ app.secret_key = os.environ.get(
 )
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax"
+    SESSION_COOKIE_SAMESITE="Lax",
+    # Render serves the public site over HTTPS; keep local HTTP development usable.
+    SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
+    # Leave room for multipart overhead around the existing 5 MB upload cap.
+    MAX_CONTENT_LENGTH=6 * 1024 * 1024,
 )
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
+
+@app.errorhandler(413)
+def request_too_large(error):
+    return jsonify({
+        "error": "request_too_large",
+        "reply": "That request is too large. Please keep uploads under 5 MB."
+    }), 413
 
 # Render terminates HTTPS in front of Gunicorn. Trust the single proxy hop
 # so rate limits can use the visitor IP from X-Forwarded-For.
