@@ -220,7 +220,7 @@ def search_web(query):
         return ""
 
 
-def ask_hosted_model(message, history, memory, document_context="", web_context=""):
+def ask_hosted_model(message, history, memory, document_context="", web_context="", saved_memory=""):
     if not API_KEY:
         app.logger.error("Hosted AI unavailable: API key is missing.")
         return (
@@ -240,7 +240,13 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
             "and use examples when helpful. If uncertain, say so instead of "
             "inventing facts. Adapt to the user's requested level of detail. "
             "Do not claim to remember details that are not present in this "
-            "conversation or saved memory."
+            "conversation or saved memory. Preserve exact user-provided names "
+            "and codes instead of reinterpreting them. When web results are "
+            "provided, cite only URLs actually present in those results; never "
+            "invent article links, publication dates, or claims. If the sources "
+            "do not support a claim, say it could not be verified. "
+            "User-approved saved memory from this browser: "
+            + (saved_memory[:4000] or "none") + "."
         )
     }]
 
@@ -345,7 +351,7 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
     except Exception:
         app.logger.exception("Hosted AI request failed")
         return "RYDON AI couldn't connect right now. Please try again."
-def ask_ollama(message, history, memory, document_context="", web_context=""):
+def ask_ollama(message, history, memory, document_context="", web_context="", saved_memory=""):
     messages = [{
         "role": "system",
         "content": (
@@ -353,7 +359,9 @@ def ask_ollama(message, history, memory, document_context="", web_context=""):
             "Be clear and practical. Adapt naturally to English or "
             "Swahili/Sheng. Known user name: "
             + (memory.get("user_name") or "not provided") + ". "
-            "Do not claim to remember unsaved details."
+            "Do not claim to remember unsaved details. Preserve exact user-provided "
+            "names and codes instead of reinterpreting them. User-approved saved "
+            "memory from this browser: " + (saved_memory[:4000] or "none") + "."
         )
     }]
 
@@ -470,6 +478,7 @@ def chat():
     message = str(body.get("message", "")).strip()
     history = body.get("history", [])
     document_context = str(body.get("document_context", ""))[:12000]
+    saved_memory = str(body.get("saved_memory", ""))[:4000]
     wants_web = bool(body.get("web_search", False))
     web_context = ""
 
@@ -511,11 +520,11 @@ def chat():
 
     try:
         if API_KEY:
-            reply = ask_hosted_model(message, history, memory, document_context, web_context)
+            reply = ask_hosted_model(message, history, memory, document_context, web_context, saved_memory)
             app.logger.info("RYDON DIAGNOSTIC: hosted model call returned to chat route")
             source = "hosted"
         else:
-            reply = ask_ollama(message, history, memory, document_context, web_context)
+            reply = ask_ollama(message, history, memory, document_context, web_context, saved_memory)
             source = "ollama"
 
         if web_search_note:
