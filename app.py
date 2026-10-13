@@ -106,11 +106,15 @@ def ask_hosted_model(message, history, memory):
     )
 
    
-try:
-    with urllib.request.urlopen(req, timeout=90) as response:
-        response_body = response.read().decode(
-            "utf-8", errors="replace"
-        )
+req = urllib.request.Request(
+    url,
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    },
+    method="POST",
+)
 
 except urllib.error.HTTPError as exc:
     detail = exc.read().decode("utf-8", errors="replace")
