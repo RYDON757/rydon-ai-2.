@@ -1,3 +1,5 @@
+import urllib.request
+import urllib.error
 from flask import Flask, render_template, request, jsonify, session
 from pathlib import Path
 import os, datetime, ast, operator, json, urllib.request, urllib.error
@@ -103,10 +105,55 @@ def ask_hosted_model(message, history, memory):
         method='POST'
     )
 
+   
+try:
     with urllib.request.urlopen(req, timeout=90) as response:
-        data = json.loads(response.read().decode())
+        response_body = response.read().decode(
+            "utf-8", errors="replace"
+        )
 
-    return data['choices'][0]['message']['content'].strip()
+except urllib.error.HTTPError as exc:
+    detail = exc.read().decode("utf-8", errors="replace")
+
+    if exc.code == 401:
+        message = (
+            "Groq authentication failed (401). "
+            "Check GROQ_API_KEY in Render Environment."
+        )
+    elif exc.code == 403:
+        message = (
+            "Groq rejected the request (403). "
+            "Check API key permissions, project access, "
+            "and model access. Provider details: "
+            + detail[:500]
+        )
+    elif exc.code == 404:
+        message = (
+            "Groq endpoint or model was not found (404). "
+            "Check the API URL and GROQ_MODEL."
+        )
+    elif exc.code == 429:
+        message = (
+            "Groq rate limit or quota reached (429). "
+            "Check your Groq usage and limits."
+        )
+    else:
+        message = (
+            f"Groq returned HTTP {exc.code}: "
+            + detail[:500]
+        )
+
+    raise RuntimeError(message) from exc
+
+except urllib.error.URLError as exc:
+    raise RuntimeError(
+        f"Could not connect to Groq: {exc.reason}"
+    ) from exc
+
+except TimeoutError as exc:
+    raise RuntimeError(
+        "Groq request timed out. Please try again."
+    ) from exc
 def ask_ollama(message, history, memory):
     messages = [{'role':'system','content':(
         'You are RYDON AI 2.0, a friendly, helpful personal assistant. Be clear and practical. '
