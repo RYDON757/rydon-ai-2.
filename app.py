@@ -183,9 +183,9 @@ def local_reply(message, memory):
 
     return None
 
-
 def ask_hosted_model(message, history, memory):
     if not API_KEY:
+        app.logger.error("Hosted AI unavailable: API key is missing.")
         return (
             "Configuration error: set GROQ_API_KEY in Render "
             "Environment Variables."
@@ -232,7 +232,11 @@ def ask_hosted_model(message, history, memory):
         headers={
             "Authorization": "Bearer " + API_KEY,
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            )
         },
         method="POST"
     )
@@ -240,14 +244,25 @@ def ask_hosted_model(message, history, memory):
     try:
         with urllib.request.urlopen(req, timeout=90) as response:
             result = json.loads(response.read().decode("utf-8"))
+            app.logger.info(
+                "Hosted AI HTTP request succeeded; configured_model=%s",
+                HOSTED_MODEL
+            )
 
         choices = result.get("choices", [])
         if choices:
-            return choices[0].get("message", {}).get(
-                "content", "I did not receive a response."
-            )
+            content = choices[0].get("message", {}).get("content")
+            if isinstance(content, str) and content.strip():
+                app.logger.info(
+                    "Hosted AI returned a completion; configured_model=%s",
+                    HOSTED_MODEL
+                )
+                return content
 
-        app.logger.warning("Hosted AI returned no choices.")
+        app.logger.warning(
+            "Hosted AI returned no usable completion; configured_model=%s",
+            HOSTED_MODEL
+        )
         return "The AI provider returned an empty response. Please try again."
 
     except urllib.error.HTTPError as error:
@@ -263,8 +278,6 @@ def ask_hosted_model(message, history, memory):
     except Exception:
         app.logger.exception("Hosted AI request failed")
         return "RYDON AI couldn't connect right now. Please try again."
-
-
 def ask_ollama(message, history, memory):
     messages = [{
         "role": "system",
