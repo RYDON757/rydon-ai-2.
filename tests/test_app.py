@@ -14,7 +14,9 @@ def client():
     rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret", RATELIMIT_ENABLED=False)
     # Give each test client a distinct IP so rate-limit counters never leak between tests.
     ip = "192.0.2." + str(next(_client_ips))
-    return rydon_app.app.test_client(environ_base={"REMOTE_ADDR": ip})
+    test_client = rydon_app.app.test_client()
+    test_client.environ_base["REMOTE_ADDR"] = ip
+    return test_client
 
 
 def test_health_endpoint_returns_ok_and_security_headers():
