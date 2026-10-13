@@ -520,6 +520,140 @@ def sitemap_xml():
 def creative_studio():
     return render_template("studio.html")
 
+@app.post("/api/studio/document")
+@limiter.limit("5 per minute")
+@limiter.limit("30 per day")
+def studio_document():
+    body = request.get_json(silent=True) or {}
+    prompt = str(body.get("prompt", "")).strip()[:3000]
+    kind = str(body.get("kind", "document")).strip().lower()[:40]
+    if not prompt:
+        return jsonify({"error": "Describe the document you want to create."}), 400
+    try:
+        instruction = (
+            "Write a polished " + kind + " based on this brief. Use useful headings, "
+            "clear structure, and the requested tone. Return the complete artifact. "
+            "Do not invent personal facts or official approvals. Brief: " + prompt
+        )
+        if API_KEY:
+            result = ask_hosted_model(instruction, [], get_memory())
+        else:
+            result = ask_ollama(instruction, [], get_memory())
+        if not result or result.startswith("Configuration error:"):
+            return jsonify({"error": result or "The AI provider returned no content."}), 503
+        return jsonify({"ok": True, "content": result})
+    except urllib.error.HTTPError as error:
+        app.logger.warning("Studio document provider HTTP %s", error.code)
+        return jsonify({"error": "The AI provider returned HTTP " + str(error.code) + ". Check its key, model access and quota."}), 502
+    except Exception:
+        app.logger.exception("Studio document generation failed")
+        return jsonify({"error": "Document generation failed. Check the configured AI provider."}), 502
+
+
+@app.post("/api/studio/image")
+@limiter.limit("3 per minute")
+@limiter.limit("20 per day")
+def studio_image():
+    body = request.get_json(silent=True) or {}
+    prompt = str(body.get("prompt", "")).strip()[:2000]
+    if not prompt:
+        return jsonify({"error": "Describe the image you want to create."}), 400
+    base = os.environ.get("RYDON_IMAGE_API_BASE", "").strip().rstrip("/")
+    key = os.environ.get("RYDON_IMAGE_API_KEY", "").strip()
+    model = os.environ.get("RYDON_IMAGE_MODEL", "").strip()
+    if not base or not key or not model:
+        return jsonify({"error": "Image generation needs a compatible provider. Configure RYDON_IMAGE_API_BASE, RYDON_IMAGE_API_KEY and RYDON_IMAGE_MODEL in Render Environment Variables."}), 503
+    payload = {"model": model, "prompt": prompt, "n": 1, "size": "1024x1024"}
+    req = urllib.request.Request(
+        base + "/images/generations",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        items = data.get("data", [])
+        if not items or not isinstance(items[0], dict):
+            return jsonify({"error": "The image provider returned no image."}), 502
+        item = items[0]
+        if not item.get("url") and not item.get("b64_json"):
+            return jsonify({"error": "The image provider response did not include an image."}), 502
+        return jsonify({"ok": True, "url": item.get("url", ""), "b64_json": item.get("b64_json", "")})
+    except urllib.error.HTTPError as error:
+        app.logger.warning("Image provider HTTP %s", error.code)
+        return jsonify({"error": "Image provider returned HTTP " + str(error.code) + ". Check its key, model, quota and API compatibility."}), 502
+    except Exception:
+        app.logger.exception("Studio image generation failed")
+        return jsonify({"error": "Could not reach the image provider. Check its API URL."}), 502
+
+
+@app.post("/api/studio/export")
+@limiter.limit("20 per minute")
+def studio_export():
+    body = request.get_json(silent=True) or {}
+    content = str(body.get("content", ""))
+    fmt = str(body.get("format", "txt")).lower()
+    if not content.strip():
+        return jsonify({"error": "There is no document content to export."}), 400
+    if len(content) > 200000:
+        return jsonify({"error": "Document is too long to export in one file."}), 413
+    filename = "".join(ch for ch in str(body.get("filename", "rydon-document"))[:80] if ch.isalnum() or ch in "-_ ").strip().replace(" ", "-") or "rydon-document"
+    stream = io.BytesIO()
+    try:
+        if fmt in ("txt", "md"):
+            mimetype = "text/plain; charset=utf-8" if fmt == "txt" else "text/markdown; charset=utf-8"
+            return Response(content, mimetype=mimetype, headers={"Content-Disposition": 'attachment; filename="' + filename + "." + fmt + '"'})
+        if fmt == "docx":
+            from docx import Document
+            doc = Document()
+            for line in content.splitlines():
+                line = line.strip()
+                if line.startswith("# "):
+                    doc.add_heading(line[2:], level=1)
+                elif line.startswith("## "):
+                    doc.add_heading(line[3:], level=2)
+                elif line.startswith("### "):
+                    doc.add_heading(line[4:], level=3)
+                elif line.startswith("- ") or line.startswith("* "):
+                    doc.add_paragraph(line[2:], style="List Bullet")
+                elif line:
+                    doc.add_paragraph(line)
+            doc.save(stream)
+            mimetype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif fmt == "pdf":
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from xml.sax.saxutils import escape
+            styles = getSampleStyleSheet()
+            story = []
+            for line in content.splitlines():
+                line = line.strip()
+                if not line:
+                    story.append(Spacer(1, 6))
+                elif line.startswith("### "):
+                    story.append(Paragraph(escape(line[4:]), styles["Heading3"]))
+                elif line.startswith("## "):
+                    story.append(Paragraph(escape(line[3:]), styles["Heading2"]))
+                elif line.startswith("# "):
+                    story.append(Paragraph(escape(line[2:]), styles["Title"]))
+                else:
+                    story.append(Paragraph(escape(line), styles["BodyText"]))
+                    story.append(Spacer(1, 4))
+            SimpleDocTemplate(stream, pagesize=A4, title=filename).build(story)
+            mimetype = "application/pdf"
+        else:
+            return jsonify({"error": "Choose TXT, Markdown, DOCX or PDF."}), 400
+        stream.seek(0)
+        return Response(stream.getvalue(), mimetype=mimetype, headers={"Content-Disposition": 'attachment; filename="' + filename + "." + fmt + '"'})
+    except ImportError:
+        return jsonify({"error": "That export format is not installed on the server."}), 503
+    except Exception:
+        app.logger.exception("Studio export failed")
+        return jsonify({"error": "Could not export this document."}), 500
+
+
 
 @app.get("/")
 def index():
