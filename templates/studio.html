@@ -25,11 +25,12 @@
 </section>
 
 <section class="card"><h2>🪄 Photo editor</h2><p>Upload a photo and describe the change. For example: “Give me neat dreadlocks, keep my face and skin tone unchanged.”</p>
+<label for="editProvider">Editing provider</label><select class="field" id="editProvider"><option value="free">Free provider (if configured; quota may be limited)</option><option value="paid">Paid provider (may incur usage charges)</option></select>
 <label for="editPhoto">Choose a photo (JPEG, PNG, or WebP; under 5 MB)</label><input class="field" id="editPhoto" type="file" accept="image/jpeg,image/png,image/webp">
 <div id="editOriginalWrap"></div>
 <label for="editPrompt">How should RYDON edit it?</label><textarea class="field" id="editPrompt" placeholder="Change my hairstyle to neat dreadlocks. Preserve my face, expression, skin tone, clothing, and background."></textarea>
 <div class="actions"><button class="btn primary" id="editPhotoBtn">Edit photo</button><button class="btn" id="clearEdit">Clear</button></div><div class="status" id="editStatus" role="status"></div><div id="editResult"></div>
-<p class="small">Your upload is processed in memory and is not saved by this app. Actual editing requires an image-editing API configured in Render. Free and paid provider quotas/costs vary.</p>
+<p class="small">Your upload is processed in memory and is not saved by this app. Actual editing requires an image-editing API configured in Render. Choose a provider configured by the site owner. Free services can have small quotas; paid services may charge per image.</p>
 </section>
 
 </div>
@@ -56,7 +57,7 @@ $('editPhotoBtn').addEventListener('click',async()=>{
   const file=editFile.files&&editFile.files[0],prompt=$('editPrompt').value.trim();
   if(!file){$('editStatus').textContent='Choose a photo first.';return}
   if(!prompt){$('editStatus').textContent='Describe the edit first.';return}
-  const btn=$('editPhotoBtn'),form=new FormData();form.append('image',file);form.append('prompt',prompt);
+  const btn=$('editPhotoBtn'),form=new FormData();form.append('image',file);form.append('prompt',prompt);form.append('provider',$('editProvider').value);
   btn.disabled=true;$('editStatus').textContent='Editing your photo… this can take a little while.';$('editResult').replaceChildren();
   try{
     const response=await fetch('/api/studio/edit',{method:'POST',body:form});let data={};try{data=await response.json()}catch(_){}

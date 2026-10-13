@@ -1,4 +1,5 @@
 import io
+import itertools
 import sys
 from pathlib import Path
 
@@ -6,10 +7,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import app as rydon_app
 
+_client_ips = itertools.count(1)
+
 
 def client():
-    rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret")
-    return rydon_app.app.test_client()
+    rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret", RATELIMIT_ENABLED=False)
+    # Give each test client a distinct IP so rate-limit counters never leak between tests.
+    ip = "192.0.2." + str(next(_client_ips))
+    test_client = rydon_app.app.test_client()
+    test_client.environ_base["REMOTE_ADDR"] = ip
+    return test_client
 
 
 def test_health_endpoint_returns_ok_and_security_headers():
@@ -163,4 +170,45 @@ def test_studio_edit_explains_missing_provider(monkeypatch):
         content_type="multipart/form-data",
     )
     assert response.status_code == 503
-    assert "RYDON_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
+    assert "RYDON_FREE_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
+
+
+
+def test_studio_edit_rejects_unknown_provider(monkeypatch):
+    monkeypatch.setenv("RYDON_IMAGE_EDIT_API_BASE", "https://example.test/v1")
+    monkeypatch.setenv("RYDON_IMAGE_EDIT_API_KEY", "test-key")
+    monkeypatch.setenv("RYDON_IMAGE_EDIT_MODEL", "test-model")
+    response = client().post(
+        "/api/studio/edit",
+        data={
+            "provider": "unknown",
+            "prompt": "Add dreadlocks",
+            "image": (io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20), "photo.png"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert "free or paid" in response.get_json()["error"]
+
+
+def test_studio_edit_provider_specific_configuration_error(monkeypatch):
+    for name in (
+        "RYDON_FREE_IMAGE_EDIT_API_BASE", "RYDON_FREE_IMAGE_EDIT_API_KEY",
+        "RYDON_FREE_IMAGE_EDIT_MODEL", "RYDON_PAID_IMAGE_EDIT_API_BASE",
+        "RYDON_PAID_IMAGE_EDIT_API_KEY", "RYDON_PAID_IMAGE_EDIT_MODEL",
+        "RYDON_IMAGE_EDIT_API_BASE", "RYDON_IMAGE_EDIT_API_KEY",
+        "RYDON_IMAGE_EDIT_MODEL", "RYDON_IMAGE_API_BASE",
+        "RYDON_IMAGE_API_KEY", "RYDON_IMAGE_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    response = client().post(
+        "/api/studio/edit",
+        data={
+            "provider": "paid",
+            "prompt": "Add dreadlocks",
+            "image": (io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"\x00" * 20), "photo.png"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 503
+    assert "RYDON_PAID_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
