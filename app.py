@@ -146,25 +146,12 @@ def chat():
     try:
         reply = ask_hosted_model(message, history if isinstance(history,list) else [], memory) if API_KEY else ask_ollama(message, history if isinstance(history,list) else [], memory)
         return jsonify({'reply':reply, 'source':'hosted' if API_KEY else 'ollama'})
-
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")[:1000]
-        app.logger.warning(
-            "AI provider HTTP %s: %s",
-            exc.code,
-            detail
-        )
-        return jsonify({
-            "reply": f"AI provider returned HTTP {exc.code}. Check Render logs for details."
-        }), 502
-        app.logger.warning('AI provider returned HTTP %s', exc.code)
-        return jsonify({'reply':'The AI provider rejected the request. Check your model name, API key, and provider quota in the hosting settings.', 'source':'provider_error'}), 502
-    except (urllib.error.URLError, TimeoutError):
-        return jsonify({'reply': 'I could not connect to the AI provider. If this website is online, configure RYDON_API_KEY, RYDON_API_BASE, and RYDON_MODEL in your host settings.', 'source':'offline'}), 503
-    except Exception:
-        app.logger.exception('Chat request failed')
-        return jsonify({'reply':'Sorry, RYDON hit an unexpected server error. Please try again.', 'source':'error'}), 500
-
+ except urllib.error.HTTPError as exc:
+    detail = exc.read().decode('utf-8', errors='replace')[:1000]
+    app.logger.warning("AI provider HTTP %s: %s", exc.code, detail)
+    return jsonify({
+        "reply": f"AI provider HTTP {exc.code}: {detail}"
+    }), 502
 @app.post('/api/memory')
 def update_memory():
     body = request.get_json(silent=True) or {}
