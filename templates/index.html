@@ -471,8 +471,9 @@
       });
       const data=await response.json();
       if(!response.ok)throw new Error(data.error||'Account request failed.');
+      const wasRegistering = authMode==='register';
       accountForm.reset();await refreshAccount();setAuthMode('login');
-      showAccountMessage(authMode==='register'?'Account created successfully. You are logged in.':'You are logged in.');
+      showAccountMessage(wasRegistering?'Account created successfully. You are logged in.':'You are logged in.');
     }catch(error){showAccountMessage(error.message||'Could not complete the account request.',true)}
     finally{submit.disabled=false}
   });
@@ -506,7 +507,7 @@
   const subscriptionResult = new URLSearchParams(location.search).get('subscription');
   if(subscriptionResult==='success')openAccountModal(true);
   else if(subscriptionResult==='cancelled')openAccountModal(true);
-  if(subscriptionResult)history.replaceState({},'',location.pathname);
+  if(subscriptionResult)window.history.replaceState({},'',location.pathname);
   renderChatList();
   if(conversations.length){const newest=conversations.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0];loadConversation(newest.id)}else{showWelcome()}
   if('serviceWorker'in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/service-worker.js').catch(()=>{}))}
