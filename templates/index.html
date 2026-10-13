@@ -3,426 +3,313 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1020">
+  <meta name="theme-color" content="#101010">
   <meta name="application-name" content="RYDON AI 2.0">
   <meta name="description" content="RYDON AI 2.0 — your personal AI assistant for chat, voice, documents and web search.">
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="icon" href="/static/rydon-icon.svg" type="image/svg+xml">
   <title>RYDON AI 2.0</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0d111b;
-      --panel: #151b28;
-      --panel-2: #1b2434;
-      --border: #2c374a;
-      --text: #f4f6fb;
-      --muted: #a6b1c5;
-      --accent: #8b7cff;
-      --accent-2: #5b8cff;
+    :root{color-scheme:dark;--bg:#212121;--sidebar:#171717;--panel:#2f2f2f;--panel2:#262626;--line:#3c3c3c;--text:#f5f5f5;--muted:#aaa;--accent:#10a37f}
+    *{box-sizing:border-box}html,body{height:100%;width:100%;margin:0}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+    button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}
+    .app{height:100dvh;display:flex;width:100%}
+    .sidebar{width:265px;flex:0 0 265px;background:var(--sidebar);display:flex;flex-direction:column;padding:12px;gap:10px;border-right:1px solid #252525;transition:width .2s,flex-basis .2s}
+    .brand-row{display:flex;align-items:center;justify-content:space-between;padding:5px 3px 10px}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:750;letter-spacing:-.04em;font-size:1.02rem}
+    .brand-mark{width:29px;height:29px;border-radius:10px;background:linear-gradient(135deg,#10a37f,#4d9bff);display:grid;place-items:center;font-size:15px;font-weight:800;color:white}
+    .icon-btn,.side-btn{border:1px solid transparent;background:transparent;border-radius:10px;display:flex;align-items:center;gap:10px;padding:10px 11px;color:#e8e8e8;text-align:left}
+    .icon-btn{justify-content:center;padding:8px;min-width:34px}
+    .icon-btn:hover,.side-btn:hover,.chat-item:hover{background:#262626}
+    .side-btn.primary{border-color:#3d3d3d;background:#202020}
+    .side-btn .glyph{width:20px;text-align:center;font-size:1.05rem}
+    .search-wrap{position:relative}
+    #searchChats{width:100%;padding:10px 11px 10px 34px;border:1px solid #303030;background:#202020;color:white;border-radius:10px;outline:none}
+    .search-icon{position:absolute;left:11px;top:9px;color:#999}
+    .section-label{font-size:.75rem;color:#8e8e8e;font-weight:650;padding:12px 9px 2px}
+    #chatList{overflow:auto;display:flex;flex-direction:column;gap:3px;min-height:0}
+    .chat-item{display:flex;align-items:center;gap:7px;border:0;background:transparent;border-radius:8px;text-align:left;padding:10px;font-size:.87rem;color:#ddd;min-width:0}
+    .chat-item.active{background:#292929}
+    .chat-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .chat-item .delete-chat{border:0;background:transparent;color:#999;padding:2px 5px;border-radius:5px;display:none}
+    .chat-item:hover .delete-chat{display:block}
+    .sidebar-bottom{margin-top:auto;border-top:1px solid #2c2c2c;padding-top:10px;display:grid;gap:4px}
+    .profile{display:flex;align-items:center;gap:10px;padding:9px 8px;color:#ddd;font-size:.84rem}
+    .avatar{width:30px;height:30px;border-radius:50%;background:#6a5acd;display:grid;place-items:center;font-weight:700;color:#fff}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column;height:100dvh;position:relative}
+    .topbar{height:58px;flex:0 0 58px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.045)}
+    .top-title{font-weight:650;font-size:.98rem}.top-sub{font-size:.78rem;color:#999;margin-top:2px}
+    .top-actions{display:flex;align-items:center;gap:8px}
+    .status-pill{font-size:.76rem;color:#b7cbbf;background:#23342e;border:1px solid #315246;border-radius:20px;padding:5px 9px}
+    #chat{flex:1;min-height:0;overflow-y:auto;overflow-wrap:anywhere;scroll-behavior:smooth;padding:24px 22px 20px}
+    .welcome{max-width:760px;margin:10vh auto 0;text-align:center}
+    .welcome-mark{width:58px;height:58px;margin:0 auto 18px;border-radius:19px;display:grid;place-items:center;background:linear-gradient(135deg,#10a37f,#4d9bff);font-size:27px;font-weight:800;box-shadow:0 10px 40px #0004}
+    .welcome h1{font-size:clamp(1.7rem,3vw,2.5rem);font-weight:650;letter-spacing:-.05em;margin:0 0 9px}
+    .welcome p{color:#aaa;margin:0 0 25px}
+    .suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}
+    .suggestion{background:#262626;border:1px solid #3b3b3b;border-radius:15px;padding:14px;color:#e7e7e7;text-align:left;line-height:1.4}
+    .suggestion:hover{background:#303030;border-color:#555}
+    .suggestion strong{display:block;font-size:.9rem;margin-bottom:4px}.suggestion small{color:#aaa;font-size:.8rem}
+    .messages{max-width:790px;margin:0 auto}
+    .msg-row{display:flex;gap:12px;margin:0 0 25px;align-items:flex-start}
+    .msg-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;font-size:.83rem;font-weight:750}
+    .msg-avatar.user-avatar{background:#555}.msg-avatar.ai-avatar{background:#10a37f;color:white}
+    .msg-content{min-width:0;flex:1;padding-top:3px;line-height:1.72;font-size:.96rem;white-space:pre-wrap;overflow-wrap:anywhere}
+    .msg-actions{display:flex;gap:5px;margin-top:8px}
+    .msg-actions button{background:transparent;border:1px solid transparent;color:#999;padding:4px 7px;border-radius:7px;font-size:.76rem}
+    .msg-actions button:hover{border-color:#454545;color:#eee}
+    .composer-area{padding:12px 20px 10px;flex:0 0 auto}
+    .composer-shell{max-width:820px;margin:0 auto;background:#2f2f2f;border:1px solid #484848;border-radius:24px;padding:10px 11px 8px;box-shadow:0 8px 35px #0002}
+    #form{display:flex;align-items:flex-end;gap:8px}
+    #message{flex:1;min-width:0;max-height:180px;resize:vertical;border:0;outline:0;background:transparent;color:white;padding:9px 8px;line-height:1.5}
+    #message::placeholder{color:#a5a5a5}
+    .send-btn{background:#f5f5f5;color:#171717;border:0;border-radius:50%;width:36px;height:36px;display:grid;place-items:center;font-weight:800;font-size:1.1rem;flex:0 0 36px}
+    .send-btn:disabled{opacity:.45;cursor:wait}
+    .composer-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px 2px 0}
+    .tool-btn,.file-label{background:transparent;border:1px solid #555;color:#ddd;border-radius:18px;padding:6px 10px;font-size:.78rem;display:inline-flex;align-items:center;gap:6px}
+    .tool-btn:hover,.file-label:hover{background:#3c3c3c}
+    .tool-btn.active{border-color:#10a37f;color:#7fe2c3;background:#17372f}
+    .tool-btn:disabled{opacity:.45;cursor:wait}
+    #file{display:none}.statusline{max-width:820px;margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#888;font-size:.72rem;min-height:1.2em}
+    .legal{font-size:.69rem;color:#777;text-align:center;padding:0 12px 9px}
+    .legal a{color:#aaa;text-decoration:none}.legal a:hover{text-decoration:underline}
+    .mobile-menu{display:none}
+    .sidebar.collapsed{width:0;flex-basis:0;padding:0;overflow:hidden;border:0}
+    @media(max-width:760px){
+      .sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:270px;transform:translateX(-100%);box-shadow:15px 0 50px #0007}
+      .sidebar.mobile-open{transform:translateX(0)}
+      .mobile-menu{display:flex}
+      .topbar{padding:0 12px}.composer-area{padding:8px 10px}.status-pill{display:none}
+      #chat{padding:16px 13px}.welcome{margin-top:8vh}.suggestions{grid-template-columns:1fr}
+      .msg-row{gap:9px;margin-bottom:20px}.msg-content{font-size:.93rem}
+      .legal{font-size:.64rem}.tool-btn,.file-label{padding:6px 8px}
     }
-    * { box-sizing: border-box; }
-    html, body { width: 100%; min-height: 100%; margin: 0; }
-    body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(ellipse at 50% -15%, rgba(91,140,255,.16), transparent 45%), var(--bg);
-      color: var(--text);
-      padding: 0 clamp(14px, 3vw, 42px);
-    }
-    h1 {
-      width: 100%;
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 22px 0 4px;
-      color: #c5bbff;
-      font-size: clamp(1.3rem, 2.4vw, 1.8rem);
-      letter-spacing: -.045em;
-    }
-    .sub {
-      width: 100%;
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 0 0 18px;
-      color: var(--muted);
-      font-size: .95rem;
-    }
-    #chat {
-      width: 100%;
-      max-width: 1120px;
-      flex: 1 0 42vh;
-      min-height: 320px;
-      max-height: none;
-      margin: 0 auto;
-      padding: clamp(14px, 2.5vw, 28px);
-      background: rgba(21, 27, 40, .88);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      overflow-y: auto;
-      overflow-wrap: anywhere;
-      box-shadow: 0 18px 70px rgba(0,0,0,.18);
-      scroll-behavior: smooth;
-    }
-    .msg {
-      max-width: min(82%, 820px);
-      padding: 14px 17px;
-      margin: 13px 0;
-      white-space: pre-wrap;
-      line-height: 1.65;
-      border-radius: 18px;
-      font-size: .97rem;
-    }
-    .user {
-      background: linear-gradient(135deg, #5546b9, #3d62bd);
-      color: #fff;
-      margin-left: auto;
-      border-bottom-right-radius: 6px;
-    }
-    .ai {
-      background: var(--panel-2);
-      border: 1px solid #2a3548;
-      color: #edf1fa;
-      margin-right: auto;
-      border-bottom-left-radius: 6px;
-    }
-    form {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      max-width: 1120px;
-      margin: 14px auto 0;
-      padding: 8px;
-      background: #151b28;
-      border: 1px solid #354159;
-      border-radius: 17px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.18);
-    }
-    input[type="text"], #message {
-      flex: 1;
-      min-width: 0;
-      padding: 14px 15px;
-      background: transparent;
-      color: var(--text);
-      border: 0;
-      outline: none;
-      border-radius: 11px;
-      font: inherit;
-    }
-    input[type="text"]:focus, #message:focus { box-shadow: inset 0 0 0 1px rgba(139,124,255,.6); }
-    input::placeholder { color: #8995aa; }
-    button, .file-label {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      padding: 11px 15px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: white;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      cursor: pointer;
-      font: inherit;
-      font-size: .9rem;
-      font-weight: 650;
-      transition: filter .15s ease, transform .15s ease, border-color .15s ease;
-    }
-    button:hover, .file-label:hover { filter: brightness(1.12); }
-    button:active, .file-label:active { transform: translateY(1px); }
-    button:disabled { opacity: .55; cursor: wait; }
-    .tools {
-      display: flex;
-      gap: 9px;
-      flex-wrap: wrap;
-      align-items: center;
-      width: 100%;
-      max-width: 1120px;
-      margin: 12px auto 0;
-    }
-    .tools button, .file-label {
-      background: #1b2434;
-      color: #dfe6f5;
-      border: 1px solid #354159;
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: .85rem;
-    }
-    .tools button:hover, .file-label:hover { background: #27334a; border-color: #7770ce; }
-    .tools label:not(.file-label) {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      color: #d2daea;
-      font-size: .9rem;
-    }
-    input[type="checkbox"] { accent-color: var(--accent); }
-    label { color: #d7e1f7; }
-    #status {
-      width: 100%;
-      max-width: 1120px;
-      min-height: 1.3em;
-      margin: 12px auto 0;
-      color: #aebbe0;
-      font-size: .88rem;
-    }
-    #file { display: none; }
-    .small {
-      width: 100%;
-      max-width: 1120px;
-      margin-left: auto;
-      margin-right: auto;
-      color: #8794ad;
-      font-size: .82rem;
-      line-height: 1.5;
-    }
-    footer.small {
-      padding-top: 14px;
-      padding-bottom: 16px;
-      border-top: 1px solid #283348;
-    }
-    a { color: #b8adff; }
-    ::selection { background: rgba(139,124,255,.38); }
-    @media (min-width: 1200px) {
-      body { padding-left: max(42px, calc((100vw - 1320px) / 2)); padding-right: max(42px, calc((100vw - 1320px) / 2)); }
-      #chat { flex-basis: 48vh; }
-    }
-    @media (max-width: 600px) {
-      body { padding: 0 10px; }
-      h1 { padding-top: 17px; }
-      .sub { padding-bottom: 12px; font-size: .88rem; }
-      #chat { min-height: 42vh; padding: 12px; border-radius: 15px; }
-      .msg { max-width: 94%; padding: 11px 13px; }
-      form { gap: 5px; padding: 5px; border-radius: 13px; }
-      input[type="text"], #message { padding: 11px 9px; font-size: .95rem; }
-      form button { padding: 10px 12px; }
-      .tools { gap: 7px; }
-      .tools button, .file-label { padding: 8px 10px; font-size: .8rem; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
-    }
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
 <body>
-  <h1>RYDON AI 2.0</h1>
-  <p class="sub">Your personal AI assistant — chat, voice and documents.</p>
-  <div id="chat" aria-live="polite">
-    <div class="msg ai">Hey! I'm RYDON AI. Ask me anything, use the microphone, or upload a TXT/PDF document.</div>
-  </div>
-  <form id="form">
-    <input id="message" type="text" placeholder="Message RYDON AI..." autocomplete="off" required maxlength="4000">
-    <button id="send" type="submit">Send</button>
-  </form>
-  <div class="tools">
-    <label><input id="webSearch" type="checkbox"> Web search</label>
-    <label class="file-label" for="file">Upload TXT/PDF</label>
-    <input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
-    <button id="voice" type="button">🎙️ Speak</button>
-    <button id="replyVoice" type="button">🔈 Voice replies: off</button>
-    <button id="stopVoice" type="button">🔇 Stop voice</button>
-    <button id="memory" type="button">🧠 Memory</button>
-    <button id="clear" type="button">Clear chat</button>
-  </div>
-  <p id="fileStatus" class="small">No document attached.</p>
-  <p id="memoryStatus" class="small">Saved memory stays in this browser.</p>
-  <p id="status">Ready</p>
-  <p class="small">Tip: Web search requires TAVILY_API_KEY in your Render environment. Voice input depends on browser support and microphone permission.</p>
-  <footer class="small" style="text-align:center;margin:28px 0 12px;border-top:1px solid #2b3855;padding-top:14px;">© 2026 IPOLITE SANDE ASANGAI. All rights reserved. Project/brand: RYDON AI 2.0 · <a href="/copyright" style="color:#9fbfff;">Copyright &amp; ownership</a></footer>
-  <script>
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('form');
-    const input = document.getElementById('message');
-    const send = document.getElementById('send');
-    const status = document.getElementById('status');
-    const fileInput = document.getElementById('file');
-    const fileStatus = document.getElementById('fileStatus');
-    const memoryStatus = document.getElementById('memoryStatus');
-    const webSearch = document.getElementById('webSearch');
-    const voiceButton = document.getElementById('voice');
-    const replyVoiceButton = document.getElementById('replyVoice');
-    const stopVoiceButton = document.getElementById('stopVoice');
-    const STORAGE_KEY = 'rydon_ai_history_v2';
-    const MEMORY_KEY = 'rydon_ai_saved_memory_v1';
-    let savedMemory = [];
-    try {
-      const storedMemory = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
-      if (Array.isArray(storedMemory)) savedMemory = storedMemory.filter(x => typeof x === 'string').map(x => x.slice(0, 500)).slice(-30);
-    } catch (_) { savedMemory = []; }
-    let history = [];
-    let documentContext = '';
-    let recognition = null;
-
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      if (Array.isArray(saved)) {
-        history = saved.filter(x => x && ['user','assistant'].includes(x.role) && typeof x.content === 'string').slice(-60);
-        for (const item of history) addMessage(item.content, item.role === 'user' ? 'user' : 'ai');
-      }
-    } catch (_) { history = []; }
-
-    function addMessage(text, who) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + who;
-      div.textContent = text;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-mark">R</span><span>RYDON AI <span style="color:#9b9b9b;font-weight:500">2.0</span></span></div>
+      <button class="icon-btn" id="closeSidebar" type="button" aria-label="Close sidebar">◧</button>
+    </div>
+    <button class="side-btn primary" id="newChat" type="button"><span class="glyph">＋</span> New chat</button>
+    <div class="search-wrap"><span class="search-icon">⌕</span><input id="searchChats" type="search" placeholder="Search chats" aria-label="Search chats"></div>
+    <div class="section-label">Recent</div>
+    <div id="chatList"></div>
+    <div class="sidebar-bottom">
+      <button class="side-btn" id="memory" type="button"><span class="glyph">✳</span> Saved memory</button>
+      <button class="side-btn" id="settings" type="button"><span class="glyph">⚙</span> Settings & tools</button>
+      <div class="profile"><div class="avatar">I</div><div><div style="font-weight:650">IPOLITE SANDE ASANGAI</div><div style="color:#888;font-size:.74rem">RYDON AI owner</div></div></div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <button class="icon-btn mobile-menu" id="openSidebar" type="button" aria-label="Open sidebar">☰</button>
+        <div><div class="top-title">RYDON AI <span style="color:#999;font-weight:450">2.0</span></div><div class="top-sub">Your personal AI assistant</div></div>
+      </div>
+      <div class="top-actions"><span class="status-pill" id="connectionBadge">● Ready</span><button class="icon-btn" id="clear" type="button" title="Clear current chat" aria-label="Clear current chat">⌫</button></div>
+    </header>
+    <section id="chat" aria-live="polite"></section>
+    <section class="composer-area">
+      <div class="composer-shell">
+        <form id="form">
+          <textarea id="message" rows="1" placeholder="Message RYDON AI..." autocomplete="off" required maxlength="4000"></textarea>
+          <button class="send-btn" id="send" type="submit" title="Send message" aria-label="Send message">↑</button>
+        </form>
+        <div class="composer-tools">
+          <label class="file-label" for="file">＋ Attach</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+          <button class="tool-btn" id="webSearch" type="button" aria-pressed="false">◎ Web search</button>
+          <button class="tool-btn" id="voice" type="button">🎙 Voice</button>
+          <button class="tool-btn" id="replyVoice" type="button">🔈 Read aloud</button>
+          <button class="tool-btn" id="stopVoice" type="button">■ Stop</button>
+        </div>
+      </div>
+      <div class="statusline"><span id="fileStatus">No document attached</span><span id="status">Ready</span></div>
+    </section>
+    <footer class="legal">RYDON AI can make mistakes. Check important information. · <a href="/copyright">© 2026 IPOLITE SANDE ASANGAI · Copyright &amp; ownership</a></footer>
+  </main>
+</div>
+<script>
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('form');
+  const input = document.getElementById('message');
+  const send = document.getElementById('send');
+  const status = document.getElementById('status');
+  const badge = document.getElementById('connectionBadge');
+  const fileInput = document.getElementById('file');
+  const fileStatus = document.getElementById('fileStatus');
+  const webSearch = document.getElementById('webSearch');
+  const voiceButton = document.getElementById('voice');
+  const replyVoiceButton = document.getElementById('replyVoice');
+  const stopVoiceButton = document.getElementById('stopVoice');
+  const sidebar = document.getElementById('sidebar');
+  const chatList = document.getElementById('chatList');
+  const searchChats = document.getElementById('searchChats');
+  const MEMORY_KEY = 'rydon_ai_saved_memory_v1';
+  const CONVERSATIONS_KEY = 'rydon_ai_conversations_v1';
+  const LEGACY_KEY = 'rydon_ai_history_v2';
+  let savedMemory = [];
+  try {
+    const storedMemory = JSON.parse(localStorage.getItem(MEMORY_KEY) || '[]');
+    if (Array.isArray(storedMemory)) savedMemory = storedMemory.filter(x => typeof x === 'string').map(x => x.slice(0,500)).slice(-30);
+  } catch (_) { savedMemory = []; }
+  let conversations = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(CONVERSATIONS_KEY) || '[]');
+    if (Array.isArray(stored)) conversations = stored.filter(c => c && typeof c.id === 'string' && Array.isArray(c.messages)).slice(0,60);
+  } catch (_) { conversations = []; }
+  let activeId = null;
+  let history = [];
+  let documentContext = '';
+  let recognition = null;
+  let webEnabled = false;
+  let speakReplies = false;
+  try {
+    const oldHistory = JSON.parse(localStorage.getItem(LEGACY_KEY) || '[]');
+    if (!conversations.length && Array.isArray(oldHistory) && oldHistory.length) {
+      const msgs = oldHistory.filter(x => x && ['user','assistant'].includes(x.role) && typeof x.content === 'string').slice(-60);
+      if (msgs.length) conversations.push({id: makeId(), title: titleFrom(msgs.find(x=>x.role==='user')?.content || 'Previous chat'), messages: msgs, updated: Date.now()});
     }
-    function saveHistory() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-60))); }
-      catch (_) { status.textContent = 'Chat works, but browser storage is unavailable.'; }
+  } catch (_) {}
+  function makeId(){return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  function titleFrom(s){const t=String(s||'New chat').replace(/\s+/g,' ').trim();return t.length>34?t.slice(0,34)+'…':(t||'New chat')}
+  function activeConversation(){return conversations.find(c=>c.id===activeId)}
+  function persist(){try{localStorage.setItem(CONVERSATIONS_KEY,JSON.stringify(conversations.slice(0,60)))}catch(_){status.textContent='Browser storage is full; some chat history may not save.'}}
+  function renderChatList(){
+    const q=searchChats.value.trim().toLowerCase();
+    chatList.innerHTML='';
+    const filtered=conversations.filter(c=>!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>String(m.content).toLowerCase().includes(q))).sort((a,b)=>(b.updated||0)-(a.updated||0));
+    if(!filtered.length){const empty=document.createElement('div');empty.style.cssText='padding:12px 9px;color:#777;font-size:.82rem';empty.textContent=q?'No matching chats':'Your conversations will appear here.';chatList.appendChild(empty);return}
+    filtered.forEach(c=>{
+      const row=document.createElement('div');row.className='chat-item'+(c.id===activeId?' active':'');
+      const label=document.createElement('span');label.textContent=c.title;label.title=c.title;
+      const del=document.createElement('button');del.className='delete-chat';del.type='button';del.textContent='×';del.title='Delete chat';del.setAttribute('aria-label','Delete '+c.title);
+      del.addEventListener('click',e=>{e.stopPropagation();if(!confirm('Delete this conversation?'))return;conversations=conversations.filter(x=>x.id!==c.id);if(activeId===c.id){activeId=null;history=[];showWelcome()}persist();renderChatList()});
+      row.append(label,del);row.addEventListener('click',()=>loadConversation(c.id));chatList.appendChild(row);
+    });
+  }
+  function ensureConversation(firstMessage){
+    let c=activeConversation();
+    if(!c){c={id:makeId(),title:titleFrom(firstMessage||'New chat'),messages:[],updated:Date.now()};conversations.unshift(c);activeId=c.id}
+    if(firstMessage&&(!c.messages.length||c.title==='New chat'))c.title=titleFrom(firstMessage);
+    c.updated=Date.now();persist();renderChatList();return c;
+  }
+  function showWelcome(){
+    chat.innerHTML='';
+    const wrap=document.createElement('div');wrap.className='welcome';
+    const mark=document.createElement('div');mark.className='welcome-mark';mark.textContent='R';
+    const h=document.createElement('h1');h.textContent='What can I help with?';
+    const p=document.createElement('p');p.textContent='Ask a question, explore an idea, or work on a document.';
+    const suggestions=document.createElement('div');suggestions.className='suggestions';
+    [['Explain something','Break a topic down step by step.','Explain a difficult topic step by step with examples.'],['Help me write','Create or improve a message or document.','Help me write a clear, professional message.'],['Study with me','Learn with notes and worked examples.','Help me study a topic with summarized notes and worked examples.'],['Analyze a document','Upload a TXT or PDF and ask questions.','I want to analyze a document I will attach.']];
+    const cards=[
+      ['Explain something','Break a topic down step by step.','Explain a difficult topic step by step with examples.'],
+      ['Help me write','Create or improve a message or document.','Help me write a clear, professional message.'],
+      ['Study with me','Learn with notes and worked examples.','Help me study a topic with summarized notes and worked examples.'],
+      ['Analyze a document','Upload a TXT or PDF and ask questions.','I want to analyze a document I will attach.']
+    ];
+    cards.forEach(c=>{const b=document.createElement('button');b.className='suggestion';const strong=document.createElement('strong');strong.textContent=c[0];const small=document.createElement('small');small.textContent=c[1];b.append(strong,small);b.addEventListener('click',()=>{input.value=c[2];input.focus();autoSize()});suggestions.appendChild(b)});
+    wrap.append(mark,h,p,suggestions);chat.appendChild(wrap);
+  }
+  function addMessage(text,who){
+    const row=document.createElement('div');row.className='msg-row';
+    const av=document.createElement('div');av.className='msg-avatar '+(who==='user'?'user-avatar':'ai-avatar');av.textContent=who==='user'?'I':'R';
+    const body=document.createElement('div');body.className='msg-content';body.textContent=text;
+    row.append(av,body);
+    if(who==='ai'){
+      const actions=document.createElement('div');actions.className='msg-actions';
+      const copy=document.createElement('button');copy.type='button';copy.textContent='▢ Copy';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(text);copy.textContent='✓ Copied';setTimeout(()=>copy.textContent='▢ Copy',1200)}catch(_){status.textContent='Copy is unavailable in this browser.'}});
+      const read=document.createElement('button');read.type='button';read.textContent='🔈 Read aloud';read.addEventListener('click',()=>{if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text))}});
+      actions.append(copy,read);body.appendChild(actions);
     }
-    function renderMemoryStatus() {
-      memoryStatus.textContent = savedMemory.length
-        ? 'Saved memory: ' + savedMemory.length + ' item(s), stored only in this browser.'
-        : 'No saved memories. Start a message with “Remember that …” to save a fact.';
-    }
-    function rememberFromMessage(message) {
-      const trimmed = message.trim();
-      const lower = trimmed.toLowerCase();
-      const start = lower.startsWith('please remember ') ? 16 : (lower.startsWith('remember ') ? 9 : -1);
-      if (start < 0) return;
-      const fact = trimmed.slice(start).trim().slice(0, 500);
-      if (!fact) return;
-      if (!savedMemory.some(item => item.toLowerCase() === fact.toLowerCase())) {
-        savedMemory.push(fact);
-        savedMemory = savedMemory.slice(-30);
-        try { localStorage.setItem(MEMORY_KEY, JSON.stringify(savedMemory)); }
-        catch (_) { status.textContent = 'Memory could not be saved in this browser.'; }
-      }
-      renderMemoryStatus();
-    }
-    renderMemoryStatus();
-
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-      if (file.size > 5 * 1024 * 1024) {
-        fileStatus.textContent = 'File is too large. Maximum size is 5 MB.';
-        fileInput.value = '';
-        return;
-      }
-      const body = new FormData();
-      body.append('file', file);
-      fileStatus.textContent = 'Reading ' + file.name + '...';
-      try {
-        const response = await fetch('/api/upload', { method: 'POST', body });
-        const data = await response.json();
-        if (!response.ok || !data.ok) throw new Error(data.error || 'Upload failed.');
-        documentContext = data.text;
-        fileStatus.textContent = 'Attached: ' + data.filename + (data.truncated ? ' (text shortened to fit AI context)' : '');
-        input.placeholder = 'Ask a question about ' + data.filename + '...';
-      } catch (err) {
-        documentContext = '';
-        fileStatus.textContent = err.message || 'Could not read that file.';
-      }
-    });
-
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      const message = input.value.trim();
-      if (!message) return;
-      rememberFromMessage(message);
-      addMessage(message, 'user');
-      input.value = '';
-      send.disabled = true;
-      status.textContent = 'Thinking...';
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            message,
-            history: history.slice(-24),
-            document_context: documentContext,
-            web_search: webSearch.checked,
-            saved_memory: savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\n')
-          })
-        });
-        const data = await res.json();
-        const reply = data.reply || 'No response received.';
-        addMessage(reply, 'ai');
-        history.push({role: 'user', content: message});
-        history.push({role: 'assistant', content: reply});
-        history = history.slice(-60);
-        saveHistory();
-        status.textContent = res.ok ? 'Connected' : 'Request failed (HTTP ' + res.status + ')';
-        if ('speechSynthesis' in window && data.reply) {
-          // Speech is started only when the user has enabled browser speech by clicking Speak.
-          if (window.rydonSpeakReplies) {
-            speechSynthesis.cancel();
-            speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
-          }
-        }
-      } catch (err) {
-        addMessage('Could not connect to the server. Try again.', 'ai');
-        status.textContent = 'Connection failed';
-      } finally {
-        send.disabled = false;
-        input.focus();
-      }
-    });
-
-    voiceButton.addEventListener('click', () => {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        status.textContent = 'Voice input is not supported in this browser. Try Chrome on HTTPS.';
-        return;
-      }
-      if (recognition) { try { recognition.stop(); } catch (_) {} }
-      recognition = new SpeechRecognition();
-      recognition.lang = 'en-KE';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-      recognition.onstart = () => { status.textContent = 'Listening... speak now.'; };
-      recognition.onresult = event => {
-        input.value = event.results[0][0].transcript;
-        input.focus();
-        status.textContent = 'Voice captured. Press Send.';
-      };
-      recognition.onerror = event => { status.textContent = 'Voice input error: ' + event.error; };
-      recognition.onend = () => { recognition = null; };
-      try { recognition.start(); } catch (_) { status.textContent = 'Could not start microphone. Check browser permission.'; }
-    });
-
-    stopVoiceButton.addEventListener('click', () => {
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
-      window.rydonSpeakReplies = false;
-      status.textContent = 'Voice playback stopped.';
-    });
-
-    replyVoiceButton.addEventListener('click', () => {
-      window.rydonSpeakReplies = !window.rydonSpeakReplies;
-      replyVoiceButton.textContent = window.rydonSpeakReplies ? '🔊 Voice replies: on' : '🔈 Voice replies: off';
-      status.textContent = window.rydonSpeakReplies ? 'Spoken replies enabled.' : 'Spoken replies disabled.';
-    });
-
-    document.getElementById('memory').addEventListener('click', () => {
-      const current = savedMemory.length ? savedMemory.map((item, i) => (i + 1) + '. ' + item).join('\n') : 'No saved memories yet.';
-      const action = prompt('Saved memory (stored only in this browser):\n\n' + current + '\n\nType CLEAR to delete all saved memories, or Cancel to keep them.');
-      if (action && action.trim().toUpperCase() === 'CLEAR') {
-        savedMemory = [];
-        localStorage.removeItem(MEMORY_KEY);
-        renderMemoryStatus();
-        status.textContent = 'Saved memory cleared.';
-      }
-    });
-
-    document.getElementById('clear').addEventListener('click', () => {
-      if (!confirm('Clear this chat history? Saved memory will remain.')) return;
-      history = [];
-      documentContext = '';
-      localStorage.removeItem(STORAGE_KEY);
-      chat.innerHTML = '<div class="msg ai">Chat cleared. How can I help?</div>';
-      fileStatus.textContent = 'No document attached.';
-      fileInput.value = '';
-      input.placeholder = 'Message RYDON AI...';
-      status.textContent = 'Chat cleared.';
-    });
-    if ('serviceWorker' in navigator && location.protocol === 'https:') {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/static/service-worker.js').catch(() => {}));
-    }
-  </script>
+    chat.appendChild(row);chat.scrollTop=chat.scrollHeight;
+  }
+  function renderMessages(){
+    chat.innerHTML='';
+    if(!history.length){showWelcome();return}
+    const wrap=document.createElement('div');wrap.className='messages';chat.appendChild(wrap);
+    history.forEach(m=>{const before=chat.children.length;addMessage(m.content,m.role==='user'?'user':'ai');const node=chat.lastElementChild;wrap.appendChild(node)});
+    chat.scrollTop=chat.scrollHeight;
+  }
+  function loadConversation(id){
+    activeId=id;const c=activeConversation();if(!c)return;history=c.messages.slice(-60);documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message RYDON AI...';renderMessages();renderChatList();sidebar.classList.remove('mobile-open');
+  }
+  function newChat(){
+    activeId=null;history=[];documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message RYDON AI...';showWelcome();renderChatList();sidebar.classList.remove('mobile-open');input.focus();
+  }
+  function saveCurrent(){
+    if(!history.length)return;
+    const c=ensureConversation(history.find(m=>m.role==='user')?.content||'New chat');
+    c.messages=history.slice(-60);c.updated=Date.now();persist();renderChatList();
+  }
+  function renderMemoryStatus(){}
+  function rememberFromMessage(message){
+    const trimmed=message.trim(),lower=trimmed.toLowerCase();
+    const start=lower.startsWith('please remember ')?16:(lower.startsWith('remember ')?9:-1);
+    if(start<0)return;
+    const fact=trimmed.slice(start).trim().slice(0,500);if(!fact)return;
+    if(!savedMemory.some(item=>item.toLowerCase()===fact.toLowerCase())){savedMemory.push(fact);savedMemory=savedMemory.slice(-30);try{localStorage.setItem(MEMORY_KEY,JSON.stringify(savedMemory))}catch(_){status.textContent='Memory could not be saved.'}}
+    status.textContent='Memory saved in this browser.';
+  }
+  function autoSize(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,180)+'px'}
+  input.addEventListener('input',autoSize);
+  document.getElementById('newChat').addEventListener('click',newChat);
+  document.getElementById('closeSidebar').addEventListener('click',()=>sidebar.classList.toggle('collapsed'));
+  document.getElementById('openSidebar').addEventListener('click',()=>sidebar.classList.toggle('mobile-open'));
+  searchChats.addEventListener('input',renderChatList);
+  webSearch.addEventListener('click',()=>{webEnabled=!webEnabled;webSearch.classList.toggle('active',webEnabled);webSearch.setAttribute('aria-pressed',String(webEnabled));status.textContent=webEnabled?'Web search enabled':'Web search disabled'});
+  document.getElementById('settings').addEventListener('click',()=>alert('RYDON AI tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
+  document.getElementById('memory').addEventListener('click',()=>{
+    const current=savedMemory.length?savedMemory.map((item,i)=>(i+1)+'. '+item).join('\n'):'No saved memories yet.';
+    const action=prompt('Saved memory (stored only in this browser):\n\n'+current+'\n\nType CLEAR to delete all saved memories, or Cancel to keep them.');
+    if(action&&action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Saved memory cleared.'}
+  });
+  fileInput.addEventListener('change',async()=>{
+    const file=fileInput.files&&fileInput.files[0];if(!file)return;
+    if(file.size>5*1024*1024){fileStatus.textContent='File too large. Maximum size is 5 MB.';fileInput.value='';return}
+    const body=new FormData();body.append('file',file);fileStatus.textContent='Reading '+file.name+'…';
+    try{const response=await fetch('/api/upload',{method:'POST',body});const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||'Upload failed.');documentContext=data.text;fileStatus.textContent='Attached: '+data.filename+(data.truncated?' (text shortened)':'');input.placeholder='Ask about '+data.filename+'…'}
+    catch(err){documentContext='';fileStatus.textContent=err.message||'Could not read file.'}
+  });
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();const message=input.value.trim();if(!message)return;
+    rememberFromMessage(message);ensureConversation(message);
+    if(chat.querySelector('.welcome'))chat.innerHTML='';
+    addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
+    input.value='';autoSize();send.disabled=true;status.textContent='Thinking…';badge.textContent='● Working';
+    try{
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\n')})});
+      const data=await res.json();const reply=data.reply||'No response received.';addMessage(reply,'ai');history.push({role:'assistant',content:reply});history=history.slice(-60);saveCurrent();
+      status.textContent=res.ok?'Connected':'Request failed (HTTP '+res.status+')';badge.textContent=res.ok?'● Connected':'● Error';
+      if(speakReplies&&'speechSynthesis'in window&&data.reply){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(reply))}
+    }catch(err){addMessage('Could not connect to the server. Please try again.','ai');history.push({role:'assistant',content:'Could not connect to the server. Please try again.'});saveCurrent();status.textContent='Connection failed';badge.textContent='● Offline'}
+    finally{send.disabled=false;input.focus()}
+  });
+  voiceButton.addEventListener('click',()=>{
+    const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SpeechRecognition){status.textContent='Voice input is not supported here. Try Chrome and allow microphone access.';return}
+    if(recognition){try{recognition.stop()}catch(_){}}
+    recognition=new SpeechRecognition();recognition.lang='en-KE';recognition.interimResults=false;recognition.maxAlternatives=1;
+    recognition.onstart=()=>{status.textContent='Listening… speak now';voiceButton.classList.add('active')};
+    recognition.onresult=event=>{input.value=event.results[0][0].transcript;autoSize();input.focus();status.textContent='Voice captured. Press send.'};
+    recognition.onerror=event=>{status.textContent='Voice input error: '+event.error};
+    recognition.onend=()=>{recognition=null;voiceButton.classList.remove('active')};
+    try{recognition.start()}catch(_){status.textContent='Could not start microphone. Check browser permission.'}
+  });
+  replyVoiceButton.addEventListener('click',()=>{speakReplies=!speakReplies;replyVoiceButton.classList.toggle('active',speakReplies);replyVoiceButton.textContent=speakReplies?'🔊 Read aloud: on':'🔈 Read aloud';status.textContent=speakReplies?'Automatic voice replies enabled':'Automatic voice replies disabled'});
+  stopVoiceButton.addEventListener('click',()=>{if('speechSynthesis'in window)speechSynthesis.cancel();speakReplies=false;replyVoiceButton.classList.remove('active');replyVoiceButton.textContent='🔈 Read aloud';status.textContent='Voice playback stopped'});
+  document.getElementById('clear').addEventListener('click',()=>{
+    if(!history.length){newChat();return}
+    if(!confirm('Clear this conversation?'))return;
+    conversations=conversations.filter(c=>c.id!==activeId);activeId=null;history=[];documentContext='';fileInput.value='';fileStatus.textContent='No document attached';persist();renderChatList();showWelcome();status.textContent='Conversation cleared.';
+  });
+  renderChatList();
+  if(conversations.length){const newest=conversations.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0];loadConversation(newest.id)}else{showWelcome()}
+  if('serviceWorker'in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/service-worker.js').catch(()=>{}))}
+</script>
 </body>
 </html>
