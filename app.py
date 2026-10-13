@@ -478,7 +478,6 @@ def robots_txt():
 Allow: /
 Disallow: /api/
 Disallow: /health
-Disallow: /embed
 
 Sitemap: https://rydon-ai-2.onrender.com/sitemap.xml
 """
