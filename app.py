@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, Response, render_template, request, jsonify, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
@@ -470,6 +470,33 @@ def ask_ollama(message, history, memory, document_context="", web_context="", sa
         data.get("message", {}).get("content", "").strip()
         or "I did not receive a response. Please try again."
     )
+
+
+@app.get("/robots.txt")
+def robots_txt():
+    body = """User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /health
+
+Sitemap: https://rydon-ai-2.onrender.com/sitemap.xml
+"""
+    return Response(body, mimetype="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap_xml():
+    body = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://rydon-ai-2.onrender.com/</loc>
+  </url>
+  <url>
+    <loc>https://rydon-ai-2.onrender.com/copyright</loc>
+  </url>
+</urlset>
+"""
+    return Response(body, mimetype="application/xml")
 
 
 @app.get("/")
