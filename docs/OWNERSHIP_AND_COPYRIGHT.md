@@ -1,9 +1,10 @@
 # RYDON AI 2.0 — Ownership and Copyright Record
 
 **Project name:** RYDON AI 2.0  
+**Claimed individual owner:** IPOLITE SANDE ASANGAI  
 **Public website:** https://rydon-ai-2.onrender.com/  
 **Source repository:** https://github.com/RYDON757/rydon-ai-2.  
-**Copyright notice used in the app:** © 2026 RYDON AI 2.0. All rights reserved.
+**Copyright notice used in the app:** © 2026 IPOLITE SANDE ASANGAI. All rights reserved. Project/brand: RYDON AI 2.0
 
 ## What this record does
 This is a project-maintenance record for keeping the app's name, website, repository, and displayed copyright notice together. Git history, dated commits, deployment records, and original source files can help document development history. Keep copies of these records.

@@ -468,7 +468,7 @@ def copyright_notice():
 <meta name="theme-color" content="#0b1020"><title>Copyright | RYDON AI 2.0</title>
 <style>body{font:16px/1.65 Arial,sans-serif;max-width:760px;margin:40px auto;padding:20px;background:#0b1020;color:#f4f7ff}h1{color:#70a5ff}a{color:#9fbfff}</style></head>
 <body><h1>RYDON AI 2.0 — Copyright &amp; Ownership</h1>
-<p><strong>Copyright © 2026 RYDON AI 2.0. All rights reserved.</strong></p>
+<p><strong>Copyright © 2026 IPOLITE SANDE ASANGAI. All rights reserved.</strong></p><p>Project/brand: RYDON AI 2.0</p>
 <p>Website: <a href="https://rydon-ai-2.onrender.com/">rydon-ai-2.onrender.com</a></p>
 <p>Source repository: <a href="https://github.com/RYDON757/rydon-ai-2.">GitHub project repository</a></p>
 <p>RYDON AI 2.0 is a browser-based AI assistant. This notice is a project copyright notice, not a government registration certificate or a claim that a trademark is registered. Formal applications should identify the actual legal owner and account for third-party contributions and components.</p>
