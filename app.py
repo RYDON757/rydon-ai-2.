@@ -78,8 +78,15 @@ def ask_hosted_model(message, history, memory):
     payload = json.dumps({'model':MODEL,'messages':messages,'temperature':0.7}).encode()
     req = urllib.request.Request(API_BASE + '/chat/completions', data=payload,
         headers={'Content-Type':'application/json','Authorization':'Bearer ' + API_KEY}, method='POST')
-    with urllib.request.urlopen(req, timeout=90) as response: data = json.loads(response.read().decode())
-    return data['choices'][0]['message']['content'].strip()
+      try:
+        with urllib.request.urlopen(req, timeout=90) as response:
+            data = json.loads(response.read().decode())
+        return data['choices'][0]['message']['content'].strip()
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode('utf-8', errors='replace')
+        raise RuntimeError(
+            f"Groq HTTP {exc.code}: {detail[:800]}"
+        ) from exc
 
 def ask_ollama(message, history, memory):
     messages = [{'role':'system','content':(
