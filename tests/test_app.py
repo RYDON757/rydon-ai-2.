@@ -8,7 +8,7 @@ import app as rydon_app
 
 
 def client():
-    rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret")
+    rydon_app.app.config.update(TESTING=True, SECRET_KEY="test-secret", RATELIMIT_ENABLED=False)
     return rydon_app.app.test_client()
 
 
@@ -163,7 +163,7 @@ def test_studio_edit_explains_missing_provider(monkeypatch):
         content_type="multipart/form-data",
     )
     assert response.status_code == 503
-    assert "RYDON_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
+    assert "RYDON_FREE_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
 
 
 
