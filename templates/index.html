@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,52 +5,92 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RYDON AI 2.0</title>
   <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background: #0b1020;
-      color: white;
-      max-width: 760px;
-      margin: 30px auto;
-      padding: 16px;
+      font-family: Arial, sans-serif; background: #0b1020; color: #f4f7ff;
+      max-width: 850px; margin: 24px auto; padding: 16px;
     }
-    h1 { color: #70a5ff; }
+    h1 { color: #70a5ff; margin-bottom: 6px; }
+    .sub { color: #b8c5df; margin-top: 0; }
     #chat {
-      background: #141c30;
-      padding: 16px;
-      min-height: 250px;
-      border-radius: 12px;
+      background: #141c30; padding: 16px; min-height: 280px; max-height: 56vh;
+      border: 1px solid #2b3855; border-radius: 14px; overflow-y: auto;
       overflow-wrap: anywhere;
     }
-    .msg { padding: 10px; margin: 8px 0; white-space: pre-wrap; }
-    .user { background: #254a85; }
-    .ai { background: #263047; }
+    .msg { padding: 12px; margin: 10px 0; white-space: pre-wrap; line-height: 1.5; border-radius: 10px; }
+    .user { background: #254a85; margin-left: 8%; }
+    .ai { background: #263047; margin-right: 8%; }
     form { display: flex; gap: 8px; margin-top: 12px; }
-    input {
-      flex: 1; min-width: 0; padding: 12px;
-      background: #141c30; color: white;
-      border: 1px solid #46516c;
+    input[type="text"], #message {
+      flex: 1; min-width: 0; padding: 13px; background: #141c30; color: white;
+      border: 1px solid #46516c; border-radius: 9px;
     }
-    button { padding: 12px; background: #3978ed; color: white; border: 0; cursor: pointer; }
+    button, .file-label {
+      padding: 11px 14px; background: #3978ed; color: white; border: 0;
+      border-radius: 9px; cursor: pointer; font-weight: 600;
+    }
+    button:disabled { opacity: .55; cursor: wait; }
+    .tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    .tools button, .file-label { background: #243451; border: 1px solid #435574; }
+    label { color: #d7e1f7; }
+    #status { color: #9fb3d8; min-height: 1.3em; }
+    #file { display: none; }
+    .small { color: #98a9c8; font-size: .88rem; }
+    @media (max-width: 560px) {
+      body { margin: 8px auto; padding: 10px; }
+      form { align-items: stretch; }
+      form button { padding: 10px; }
+      .user { margin-left: 2%; } .ai { margin-right: 2%; }
+    }
   </style>
 </head>
 <body>
   <h1>RYDON AI 2.0</h1>
-  <p>Your personal AI assistant</p>
-  <div id="chat">
-    <div class="msg ai">Hey! I'm Rydon AI. How can I help you?</div>
+  <p class="sub">Your personal AI assistant — chat, voice and documents.</p>
+  <div id="chat" aria-live="polite">
+    <div class="msg ai">Hey! I'm RYDON AI. Ask me anything, use the microphone, or upload a TXT/PDF document.</div>
   </div>
   <form id="form">
-    <input id="message" placeholder="Message Rydon AI..." required>
+    <input id="message" type="text" placeholder="Message RYDON AI..." autocomplete="off" required maxlength="4000">
     <button id="send" type="submit">Send</button>
   </form>
+  <div class="tools">
+    <label><input id="webSearch" type="checkbox"> Web search</label>
+    <label class="file-label" for="file">Upload TXT/PDF</label>
+    <input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+    <button id="voice" type="button">🎙️ Speak</button>
+    <button id="replyVoice" type="button">🔈 Voice replies: off</button>
+    <button id="stopVoice" type="button">🔇 Stop voice</button>
+    <button id="clear" type="button">Clear chat</button>
+  </div>
+  <p id="fileStatus" class="small">No document attached.</p>
   <p id="status">Ready</p>
+  <p class="small">Tip: Web search requires TAVILY_API_KEY in your Render environment. Voice input depends on browser support and microphone permission.</p>
   <script>
     const chat = document.getElementById('chat');
     const form = document.getElementById('form');
     const input = document.getElementById('message');
     const send = document.getElementById('send');
     const status = document.getElementById('status');
-    const history = [];
+    const fileInput = document.getElementById('file');
+    const fileStatus = document.getElementById('fileStatus');
+    const webSearch = document.getElementById('webSearch');
+    const voiceButton = document.getElementById('voice');
+    const replyVoiceButton = document.getElementById('replyVoice');
+    const stopVoiceButton = document.getElementById('stopVoice');
+    const STORAGE_KEY = 'rydon_ai_history_v2';
+    let history = [];
+    let documentContext = '';
+    let recognition = null;
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (Array.isArray(saved)) {
+        history = saved.filter(x => x && ['user','assistant'].includes(x.role) && typeof x.content === 'string').slice(-60);
+        for (const item of history) addMessage(item.content, item.role === 'user' ? 'user' : 'ai');
+      }
+    } catch (_) { history = []; }
 
     function addMessage(text, who) {
       const div = document.createElement('div');
@@ -60,6 +99,34 @@
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
     }
+    function saveHistory() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-60))); }
+      catch (_) { status.textContent = 'Chat works, but browser storage is unavailable.'; }
+    }
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        fileStatus.textContent = 'File is too large. Maximum size is 5 MB.';
+        fileInput.value = '';
+        return;
+      }
+      const body = new FormData();
+      body.append('file', file);
+      fileStatus.textContent = 'Reading ' + file.name + '...';
+      try {
+        const response = await fetch('/api/upload', { method: 'POST', body });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || 'Upload failed.');
+        documentContext = data.text;
+        fileStatus.textContent = 'Attached: ' + data.filename + (data.truncated ? ' (text shortened to fit AI context)' : '');
+        input.placeholder = 'Ask a question about ' + data.filename + '...';
+      } catch (err) {
+        documentContext = '';
+        fileStatus.textContent = err.message || 'Could not read that file.';
+      }
+    });
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
@@ -73,19 +140,81 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({message, history})
+          body: JSON.stringify({
+            message,
+            history: history.slice(-24),
+            document_context: documentContext,
+            web_search: webSearch.checked
+          })
         });
         const data = await res.json();
-        addMessage(data.reply || 'No response received.', 'ai');
+        const reply = data.reply || 'No response received.';
+        addMessage(reply, 'ai');
         history.push({role: 'user', content: message});
-        history.push({role: 'assistant', content: data.reply || ''});
-        status.textContent = res.ok ? 'Connected' : 'HTTP ' + res.status;
+        history.push({role: 'assistant', content: reply});
+        history = history.slice(-60);
+        saveHistory();
+        status.textContent = res.ok ? 'Connected' : 'Request failed (HTTP ' + res.status + ')';
+        if ('speechSynthesis' in window && data.reply) {
+          // Speech is started only when the user has enabled browser speech by clicking Speak.
+          if (window.rydonSpeakReplies) {
+            speechSynthesis.cancel();
+            speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
+          }
+        }
       } catch (err) {
         addMessage('Could not connect to the server. Try again.', 'ai');
         status.textContent = 'Connection failed';
       } finally {
         send.disabled = false;
+        input.focus();
       }
+    });
+
+    voiceButton.addEventListener('click', () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        status.textContent = 'Voice input is not supported in this browser. Try Chrome on HTTPS.';
+        return;
+      }
+      if (recognition) { try { recognition.stop(); } catch (_) {} }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-KE';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onstart = () => { status.textContent = 'Listening... speak now.'; };
+      recognition.onresult = event => {
+        input.value = event.results[0][0].transcript;
+        input.focus();
+        status.textContent = 'Voice captured. Press Send.';
+      };
+      recognition.onerror = event => { status.textContent = 'Voice input error: ' + event.error; };
+      recognition.onend = () => { recognition = null; };
+      try { recognition.start(); } catch (_) { status.textContent = 'Could not start microphone. Check browser permission.'; }
+    });
+
+    stopVoiceButton.addEventListener('click', () => {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      window.rydonSpeakReplies = false;
+      status.textContent = 'Voice playback stopped.';
+    });
+
+    replyVoiceButton.addEventListener('click', () => {
+      window.rydonSpeakReplies = !window.rydonSpeakReplies;
+      replyVoiceButton.textContent = window.rydonSpeakReplies ? '🔊 Voice replies: on' : '🔈 Voice replies: off';
+      status.textContent = window.rydonSpeakReplies ? 'Spoken replies enabled.' : 'Spoken replies disabled.';
+    });
+
+    document.getElementById('clear').addEventListener('click', () => {
+      if (!confirm('Clear this chat history from this browser?')) return;
+      history = [];
+      documentContext = '';
+      localStorage.removeItem(STORAGE_KEY);
+      chat.innerHTML = '<div class="msg ai">Chat cleared. How can I help?</div>';
+      fileStatus.textContent = 'No document attached.';
+      fileInput.value = '';
+      input.placeholder = 'Message RYDON AI...';
+      status.textContent = 'Chat cleared.';
     });
   </script>
 </body>
