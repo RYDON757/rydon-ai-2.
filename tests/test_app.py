@@ -66,3 +66,58 @@ def test_embed_route_still_loads():
 
     assert response.status_code == 200
     assert "Content-Security-Policy" in response.headers
+
+def test_creative_studio_page_loads():
+    response = client().get("/studio")
+
+    assert response.status_code == 200
+    assert b"Document creator" in response.data
+    assert b"Image generator" in response.data
+
+
+def test_studio_document_uses_configured_ai(monkeypatch):
+    rydon_app.API_KEY = "test-key"
+    monkeypatch.setattr(
+        rydon_app, "ask_hosted_model",
+        lambda message, history, memory: "# Test document\n\nCreated."
+    )
+    response = client().post(
+        "/api/studio/document",
+        json={"kind": "report", "prompt": "Write a short test report"}
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["content"].startswith("# Test document")
+
+
+def test_studio_export_txt_returns_download():
+    response = client().post(
+        "/api/studio/export",
+        json={"content": "Hello RYDON", "format": "txt", "filename": "hello"}
+    )
+
+    assert response.status_code == 200
+    assert response.data == b"Hello RYDON"
+    assert "attachment" in response.headers.get("Content-Disposition", "")
+
+
+def test_studio_export_rejects_unknown_format():
+    response = client().post(
+        "/api/studio/export",
+        json={"content": "Hello", "format": "exe"}
+    )
+
+    assert response.status_code == 400
+
+
+def test_image_generation_explains_missing_provider(monkeypatch):
+    monkeypatch.delenv("RYDON_IMAGE_API_BASE", raising=False)
+    monkeypatch.delenv("RYDON_IMAGE_API_KEY", raising=False)
+    monkeypatch.delenv("RYDON_IMAGE_MODEL", raising=False)
+    response = client().post(
+        "/api/studio/image",
+        json={"prompt": "A sunrise above the mountains"}
+    )
+
+    assert response.status_code == 503
+    assert "compatible provider" in response.get_json()["error"]
