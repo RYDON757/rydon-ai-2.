@@ -60,6 +60,7 @@
     <label class="file-label" for="file">Upload TXT/PDF</label>
     <input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
     <button id="voice" type="button">🎙️ Speak</button>
+    <button id="replyVoice" type="button">🔈 Voice replies: off</button>
     <button id="stopVoice" type="button">🔇 Stop voice</button>
     <button id="clear" type="button">Clear chat</button>
   </div>
@@ -76,6 +77,7 @@
     const fileStatus = document.getElementById('fileStatus');
     const webSearch = document.getElementById('webSearch');
     const voiceButton = document.getElementById('voice');
+    const replyVoiceButton = document.getElementById('replyVoice');
     const stopVoiceButton = document.getElementById('stopVoice');
     const STORAGE_KEY = 'rydon_ai_history_v2';
     let history = [];
@@ -197,10 +199,10 @@
       status.textContent = 'Voice playback stopped.';
     });
 
-    // Enable spoken replies by clicking the voice control twice or using this shortcut.
-    voiceButton.addEventListener('dblclick', () => {
-      window.rydonSpeakReplies = true;
-      status.textContent = 'Spoken replies enabled. Click Stop voice to disable.';
+    replyVoiceButton.addEventListener('click', () => {
+      window.rydonSpeakReplies = !window.rydonSpeakReplies;
+      replyVoiceButton.textContent = window.rydonSpeakReplies ? '🔊 Voice replies: on' : '🔈 Voice replies: off';
+      status.textContent = window.rydonSpeakReplies ? 'Spoken replies enabled.' : 'Spoken replies disabled.';
     });
 
     document.getElementById('clear').addEventListener('click', () => {
