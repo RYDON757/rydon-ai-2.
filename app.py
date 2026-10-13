@@ -63,31 +63,50 @@ def local_reply(message, memory):
         except ZeroDivisionError: return 'You cannot divide by zero.'
         except Exception: return 'I could not calculate that. Try something like: calculate 25 * 4'
     return None
-
 def ask_hosted_model(message, history, memory):
-    messages = [{'role':'system','content':(
-        'You are RYDON AI 2.0, a friendly, helpful personal assistant. Be clear and practical. '
-        'The user may prefer casual English or Swahili/Sheng; adapt naturally. '
-        'Known user name: ' + (memory.get('user_name') or 'not provided') + '. '
-        'Do not claim to remember details that are not present in this conversation or saved memory.'
+    messages = [{'role': 'system', 'content': (
+        'You are RYDON AI 2.0, a friendly, helpful personal assistant. '
+        'Be clear and practical. The user may prefer casual English or '
+        'Swahili/Sheng; adapt naturally. Known user name: '
+        + (memory.get('user_name') or 'not provided') + '. '
+        'Do not claim to remember details that are not present in this '
+        'conversation or saved memory.'
     )}]
-    for item in history[-12:]:
-        if isinstance(item, dict) and item.get('role') in ('user','assistant') and isinstance(item.get('content'), str):
-            messages.append({'role':item['role'], 'content':item['content'][:4000]})
-    messages.append({'role':'user','content':message[:4000]})
-    payload = json.dumps({'model':MODEL,'messages':messages,'temperature':0.7}).encode()
-    req = urllib.request.Request(API_BASE + '/chat/completions', data=payload,
-        headers={'Content-Type':'application/json','Authorization':'Bearer ' + API_KEY}, method='POST')
-      try:
-        with urllib.request.urlopen(req, timeout=90) as response:
-            data = json.loads(response.read().decode())
-        return data['choices'][0]['message']['content'].strip()
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode('utf-8', errors='replace')
-        raise RuntimeError(
-            f"Groq HTTP {exc.code}: {detail[:800]}"
-        ) from exc
 
+    for item in history[-12:]:
+        if (isinstance(item, dict)
+                and item.get('role') in ('user', 'assistant')
+                and isinstance(item.get('content'), str)):
+            messages.append({
+                'role': item['role'],
+                'content': item['content'][:4000]
+            })
+
+    messages.append({
+        'role': 'user',
+        'content': message[:4000]
+    })
+
+    payload = json.dumps({
+        'model': MODEL,
+        'messages': messages,
+        'temperature': 0.7
+    }).encode()
+
+    req = urllib.request.Request(
+        API_BASE + '/chat/completions',
+        data=payload,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + API_KEY
+        },
+        method='POST'
+    )
+
+    with urllib.request.urlopen(req, timeout=90) as response:
+        data = json.loads(response.read().decode())
+
+    return data['choices'][0]['message']['content'].strip()
 def ask_ollama(message, history, memory):
     messages = [{'role':'system','content':(
         'You are RYDON AI 2.0, a friendly, helpful personal assistant. Be clear and practical. '
