@@ -375,6 +375,7 @@ def chat():
     try:
         if API_KEY:
             reply = ask_hosted_model(message, history, memory)
+            app.logger.info("RYDON DIAGNOSTIC: hosted model call returned to chat route")
             source = "hosted"
         else:
             reply = ask_ollama(message, history, memory)
