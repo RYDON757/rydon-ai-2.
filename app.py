@@ -186,17 +186,26 @@ def local_reply(message, memory):
     return None
 
 def search_web(query):
-    """Return a small, bounded set of web results from Tavily."""
+    """Return bounded search results, preferring article pages for current news."""
     if not TAVILY_API_KEY:
         return None
 
+    news_query = any(term in query.lower() for term in (
+        "latest news", "technology news", "tech news", "today's news",
+        "today news", "recent news", "breaking news", "latest stories",
+        "current news", "news today"
+    ))
     payload = {
         "api_key": TAVILY_API_KEY,
         "query": query[:500],
-        "search_depth": "basic",
-        "max_results": 5,
+        "search_depth": "advanced" if news_query else "basic",
+        "max_results": 8 if news_query else 5,
         "include_answer": False
     }
+    if news_query:
+        payload["topic"] = "news"
+        payload["days"] = 30
+
     req = urllib.request.Request(
         "https://api.tavily.com/search",
         data=json.dumps(payload).encode("utf-8"),
@@ -204,21 +213,31 @@ def search_web(query):
         method="POST"
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=20) as response:
             data = json.loads(response.read().decode("utf-8"))
         results = data.get("results", [])
         snippets = []
-        for item in results[:5]:
+        for item in results[:8 if news_query else 5]:
             title = str(item.get("title", "Untitled"))[:200]
             url = str(item.get("url", ""))[:500]
             content = str(item.get("content", ""))[:900]
-            if url and content:
+            lowered_url = url.lower().split("?", 1)[0].rstrip("/")
+            generic_news_page = news_query and any(
+                marker in lowered_url for marker in (
+                    "/section/", "/newsroom/industry", "/category/",
+                    "/tag/", "/topics/"
+                )
+            )
+            if url and content and not generic_news_page:
                 snippets.append(f"Title: {title}\nURL: {url}\nSnippet: {content}")
+        app.logger.info(
+            "Web search completed; news_query=%s; usable_results=%s",
+            news_query, len(snippets)
+        )
         return "\n\n".join(snippets) if snippets else ""
     except Exception:
         app.logger.exception("Web search request failed")
         return ""
-
 
 def ask_hosted_model(message, history, memory, document_context="", web_context="", saved_memory=""):
     if not API_KEY:
@@ -242,8 +261,8 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
             "Do not claim to remember details that are not present in this "
             "conversation or saved memory. Preserve exact user-provided names "
             "and codes instead of reinterpreting them. When web results are "
-            "provided, cite only URLs actually present in those results; never "
-            "invent article links, publication dates, or claims. If the sources "
+            "provided, cite only exact URLs actually present in those results; "
+            "never replace an article URL with a publisher homepage, section page, or newsroom category. For news, distinguish the article publication date from dates of future events mentioned in the article. Do not state a publication date unless the result snippet supports it. If fewer than three reliable article sources are available, return fewer stories and explain the limitation rather than padding the list. Never invent article links, publication dates, or claims. If the sources "
             "do not support a claim, say it could not be verified. "
             "User-approved saved memory from this browser: "
             + (saved_memory[:4000] or "none") + "."
