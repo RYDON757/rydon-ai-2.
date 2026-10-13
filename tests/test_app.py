@@ -49,10 +49,11 @@ def test_upload_rejects_unsupported_file_type():
 
 
 def test_oversized_request_returns_json_413():
+    oversized_json = b'{"message":"' + (b"x" * (6 * 1024 * 1024)) + b'"}'
     response = client().post(
         "/api/chat",
-        data=b"x" * (6 * 1024 * 1024 + 1),
-        content_type="application/octet-stream",
+        data=oversized_json,
+        content_type="application/json",
     )
 
     assert response.status_code == 413
