@@ -465,7 +465,6 @@ def index():
 def embed_widget():
     """Standalone RYDON AI chat widget intended for iframe embedding."""
     response = app.make_response(render_template("embed.html"))
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Content-Security-Policy"] = (
         "frame-ancestors *; default-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
