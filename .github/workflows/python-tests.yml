@@ -2,7 +2,7 @@ name: Python checks
 
 on:
   push:
-    branches: [main, feat/security-hardening]
+    branches: [main, feat/security-hardening, feat/creative-studio]
   pull_request:
     branches: [main]
 
@@ -24,6 +24,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
       - name: Compile Python files
-        run: python -m compileall -q app.py
+        run: python -m compileall -q app.py tests
       - name: Run tests
         run: pytest -q
