@@ -257,6 +257,7 @@ def ask_hosted_model(message, history, memory):
                     "Hosted AI returned a completion; configured_model=%s",
                     HOSTED_MODEL
                 )
+                app.logger.warning("RYDON_PROVIDER_OK: completion received")
                 return content
 
         app.logger.warning(
