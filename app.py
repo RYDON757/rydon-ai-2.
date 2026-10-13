@@ -484,16 +484,24 @@ def chat():
     if not isinstance(history, list):
         history = []
 
+    web_search_note = ""
     if wants_web:
         if not TAVILY_API_KEY:
-            return jsonify({
-                "reply": "Web search is not configured yet. Add TAVILY_API_KEY to your Render environment variables, then redeploy."
-            }), 503
-        web_context = search_web(message)
-        if not web_context:
-            return jsonify({
-                "reply": "I couldn't retrieve web results just now. Please try again or turn off Web search."
-            }), 502
+            # Keep chat usable even when optional live search is not configured.
+            web_search_note = (
+                "\n\nNote: Live web search is not configured yet, so this "
+                "answer is based on the AI model's existing knowledge. "
+                "Add TAVILY_API_KEY in Render to enable live results."
+            )
+            app.logger.warning("Web search requested but TAVILY_API_KEY is missing.")
+        else:
+            web_context = search_web(message)
+            if not web_context:
+                web_search_note = (
+                    "\n\nNote: Live web search could not retrieve results "
+                    "this time, so this answer may not reflect the latest information."
+                )
+                app.logger.warning("Web search returned no usable results.")
 
     memory = get_memory()
     quick = local_reply(message, memory) if not document_context and not wants_web else None
@@ -510,6 +518,8 @@ def chat():
             reply = ask_ollama(message, history, memory, document_context, web_context)
             source = "ollama"
 
+        if web_search_note:
+            reply = (reply or "") + web_search_note
         return jsonify({"reply": reply, "source": source})
 
     except urllib.error.HTTPError as exc:
