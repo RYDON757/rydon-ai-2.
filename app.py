@@ -10,6 +10,13 @@ import operator
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
+import sqlite3
+import re
+import hmac
+import hashlib
+import time
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get(
@@ -778,6 +785,314 @@ def studio_export():
         app.logger.exception("Studio export failed")
         return jsonify({"error": "Could not export this document."}), 500
 
+
+
+
+# Account and subscription support.
+# Set RYDON_DATABASE_PATH to a durable mounted path, or configure a managed
+# database before relying on this SQLite fallback for production accounts.
+AUTH_DB_PATH = os.environ.get(
+    "RYDON_DATABASE_PATH",
+    os.path.join(app.instance_path, "rydon_accounts.sqlite3")
+)
+os.makedirs(os.path.dirname(os.path.abspath(AUTH_DB_PATH)), exist_ok=True)
+
+
+def auth_db():
+    connection = sqlite3.connect(AUTH_DB_PATH, timeout=15)
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
+
+
+def init_auth_db():
+    with auth_db() as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS rydon_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                display_name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                plan TEXT NOT NULL DEFAULT 'free',
+                selected_plan TEXT NOT NULL DEFAULT 'free',
+                subscription_status TEXT NOT NULL DEFAULT 'free',
+                stripe_customer_id TEXT,
+                stripe_subscription_id TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+        columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(rydon_users)")
+        }
+        if "selected_plan" not in columns:
+            connection.execute(
+                "ALTER TABLE rydon_users ADD COLUMN selected_plan TEXT NOT NULL DEFAULT 'free'"
+            )
+
+
+init_auth_db()
+
+
+def public_account(row):
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "name": row["display_name"],
+        "email": row["email"],
+        "plan": row["plan"],
+        "selected_plan": row["selected_plan"],
+        "subscription_status": row["subscription_status"],
+        "created_at": row["created_at"],
+    }
+
+
+def current_account():
+    user_id = session.get("account_id")
+    if not user_id:
+        return None
+    with auth_db() as connection:
+        row = connection.execute(
+            "SELECT * FROM rydon_users WHERE id = ?", (user_id,)
+        ).fetchone()
+    if not row:
+        session.pop("account_id", None)
+        return None
+    return row
+
+
+@app.get("/api/auth/me")
+def auth_me():
+    row = current_account()
+    return jsonify({
+        "authenticated": bool(row),
+        "account": public_account(row),
+        "billing_configured": bool(
+            os.environ.get("STRIPE_SECRET_KEY")
+            and os.environ.get("STRIPE_PRICE_PLUS")
+            and os.environ.get("STRIPE_PRICE_PRO")
+        ),
+    })
+
+
+@app.post("/api/auth/register")
+@limiter.limit("5 per minute")
+def auth_register():
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()[:80]
+    email = str(body.get("email", "")).strip().lower()[:254]
+    password = str(body.get("password", ""))
+    if len(name) < 2:
+        return jsonify({"error": "Enter your name (at least 2 characters)."}), 400
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return jsonify({"error": "Enter a valid email address."}), 400
+    if len(password) < 10 or len(password) > 256:
+        return jsonify({"error": "Use a password between 10 and 256 characters."}), 400
+    try:
+        with auth_db() as connection:
+            cursor = connection.execute(
+                """INSERT INTO rydon_users
+                   (display_name, email, password_hash, created_at)
+                   VALUES (?, ?, ?, ?)""",
+                (
+                    name,
+                    email,
+                    generate_password_hash(password),
+                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                ),
+            )
+            user_id = cursor.lastrowid
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "An account with that email already exists. Log in instead."}), 409
+    session.clear()
+    session["account_id"] = user_id
+    session["user_name"] = name
+    with auth_db() as connection:
+        row = connection.execute(
+            "SELECT * FROM rydon_users WHERE id = ?", (user_id,)
+        ).fetchone()
+    return jsonify({"ok": True, "account": public_account(row)}), 201
+
+
+@app.post("/api/auth/login")
+@limiter.limit("10 per minute")
+def auth_login():
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()[:254]
+    password = str(body.get("password", ""))
+    with auth_db() as connection:
+        row = connection.execute(
+            "SELECT * FROM rydon_users WHERE email = ?", (email,)
+        ).fetchone()
+    if not row or not check_password_hash(row["password_hash"], password):
+        return jsonify({"error": "Email or password is incorrect."}), 401
+    session.clear()
+    session["account_id"] = row["id"]
+    session["user_name"] = row["display_name"]
+    return jsonify({"ok": True, "account": public_account(row)})
+
+
+@app.post("/api/auth/logout")
+def auth_logout():
+    session.clear()
+    return jsonify({"ok": True})
+
+
+@app.post("/api/account/plan")
+def account_select_plan():
+    row = current_account()
+    if not row:
+        return jsonify({"error": "Log in or create an account first."}), 401
+    body = request.get_json(silent=True) or {}
+    plan = str(body.get("plan", "")).lower()
+    if plan != "free":
+        return jsonify({"error": "Paid plans must be activated through secure checkout."}), 400
+    with auth_db() as connection:
+        connection.execute(
+            "UPDATE rydon_users SET plan = 'free', selected_plan = 'free', subscription_status = 'free', stripe_subscription_id = NULL WHERE id = ?",
+            (row["id"],),
+        )
+        updated = connection.execute(
+            "SELECT * FROM rydon_users WHERE id = ?", (row["id"],)
+        ).fetchone()
+    return jsonify({"ok": True, "account": public_account(updated)})
+
+
+@app.post("/api/billing/checkout")
+@limiter.limit("5 per minute")
+def billing_checkout():
+    row = current_account()
+    if not row:
+        return jsonify({"error": "Log in or create an account before choosing a subscription."}), 401
+    body = request.get_json(silent=True) or {}
+    plan = str(body.get("plan", "")).lower()
+    price_ids = {
+        "plus": os.environ.get("STRIPE_PRICE_PLUS", "").strip(),
+        "pro": os.environ.get("STRIPE_PRICE_PRO", "").strip(),
+    }
+    secret_key = os.environ.get("STRIPE_SECRET_KEY", "").strip()
+    if plan not in price_ids:
+        return jsonify({"error": "Choose the Plus or Pro subscription."}), 400
+    if not secret_key or not price_ids[plan]:
+        return jsonify({
+            "error": "Subscriptions are displayed, but secure checkout is not configured yet. The site owner must add STRIPE_SECRET_KEY, STRIPE_PRICE_PLUS, and STRIPE_PRICE_PRO in Render."
+        }), 503
+    fields = {
+        "mode": "subscription",
+        "success_url": request.url_root.rstrip("/") + "/?subscription=success",
+        "cancel_url": request.url_root.rstrip("/") + "/?subscription=cancelled",
+        "customer_email": row["email"],
+        "client_reference_id": str(row["id"]),
+        "line_items[0][price]": price_ids[plan],
+        "line_items[0][quantity]": "1",
+        "metadata[user_id]": str(row["id"]),
+        "metadata[plan]": plan,
+        "subscription_data[metadata][user_id]": str(row["id"]),
+        "subscription_data[metadata][plan]": plan,
+    }
+    req = urllib.request.Request(
+        "https://api.stripe.com/v1/checkout/sessions",
+        data=urllib.parse.urlencode(fields).encode("utf-8"),
+        headers={
+            "Authorization": "Bearer " + secret_key,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "RYDON-AI/2.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            checkout = json.loads(response.read().decode("utf-8"))
+        checkout_url = checkout.get("url", "")
+        if not checkout_url.startswith("https://checkout.stripe.com/"):
+            app.logger.error("Stripe checkout response did not contain an expected checkout URL.")
+            return jsonify({"error": "The payment provider returned an invalid checkout URL."}), 502
+        with auth_db() as connection:
+            connection.execute(
+                "UPDATE rydon_users SET selected_plan = ? WHERE id = ?",
+                (plan, row["id"]),
+            )
+        return jsonify({"ok": True, "url": checkout_url})
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")[:400]
+        app.logger.error("Stripe checkout creation failed with HTTP %s: %s", error.code, detail)
+        return jsonify({"error": "Secure checkout could not be started. Check the Stripe product and price configuration."}), 502
+    except Exception:
+        app.logger.exception("Stripe checkout creation failed.")
+        return jsonify({"error": "Could not connect to the billing provider. Please try again."}), 502
+
+
+@app.post("/api/billing/webhook")
+def billing_webhook():
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
+    if not webhook_secret:
+        return jsonify({"error": "Billing webhook is not configured."}), 503
+    payload = request.get_data(cache=False)
+    signature_header = request.headers.get("Stripe-Signature", "")
+    parts = {}
+    for segment in signature_header.split(","):
+        if "=" in segment:
+            key, value = segment.split("=", 1)
+            parts.setdefault(key, []).append(value)
+    timestamp = (parts.get("t") or [""])[0]
+    signatures = parts.get("v1") or []
+    try:
+        timestamp_int = int(timestamp)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid webhook signature."}), 400
+    if abs(time.time() - timestamp_int) > 300:
+        return jsonify({"error": "Webhook timestamp is outside the allowed window."}), 400
+    signed_payload = timestamp.encode("ascii") + b"." + payload
+    expected = hmac.new(
+        webhook_secret.encode("utf-8"), signed_payload, hashlib.sha256
+    ).hexdigest()
+    if not any(hmac.compare_digest(expected, value) for value in signatures):
+        return jsonify({"error": "Invalid webhook signature."}), 400
+    try:
+        event = json.loads(payload.decode("utf-8"))
+        event_type = event.get("type", "")
+        obj = event.get("data", {}).get("object", {})
+        metadata = obj.get("metadata") or {}
+        user_id = metadata.get("user_id") or obj.get("client_reference_id")
+        plan = metadata.get("plan", "")
+        if event_type == "checkout.session.completed":
+            if user_id and plan in ("plus", "pro"):
+                paid = obj.get("payment_status") in ("paid", "no_payment_required")
+                with auth_db() as connection:
+                    connection.execute(
+                        """UPDATE rydon_users
+                           SET plan = ?, selected_plan = ?, subscription_status = ?,
+                               stripe_customer_id = ?, stripe_subscription_id = ?
+                           WHERE id = ?""",
+                        (
+                            plan if paid else "free",
+                            plan,
+                            "active" if paid else "pending",
+                            str(obj.get("customer") or "") or None,
+                            str(obj.get("subscription") or "") or None,
+                            int(user_id),
+                        ),
+                    )
+        elif event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
+            if user_id:
+                status_value = str(obj.get("status", "inactive"))
+                active = status_value in ("active", "trialing")
+                with auth_db() as connection:
+                    connection.execute(
+                        """UPDATE rydon_users
+                           SET plan = ?, subscription_status = ?, stripe_subscription_id = ?
+                           WHERE id = ?""",
+                        (
+                            plan if active and plan in ("plus", "pro") else "free",
+                            status_value,
+                            str(obj.get("id") or "") or None,
+                            int(user_id),
+                        ),
+                    )
+        return jsonify({"received": True})
+    except Exception:
+        app.logger.exception("Stripe webhook processing failed.")
+        return jsonify({"error": "Webhook event could not be processed."}), 400
 
 
 @app.get("/")
