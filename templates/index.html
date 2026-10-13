@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RYDON AI 2.0</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: white;
+      max-width: 760px;
+      margin: 30px auto;
+      padding: 16px;
+    }
+    h1 { color: #70a5ff; }
+    #chat {
+      background: #141c30;
+      padding: 16px;
+      min-height: 250px;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
+    }
+    .msg { padding: 10px; margin: 8px 0; white-space: pre-wrap; }
+    .user { background: #254a85; }
+    .ai { background: #263047; }
+    form { display: flex; gap: 8px; margin-top: 12px; }
+    input {
+      flex: 1; min-width: 0; padding: 12px;
+      background: #141c30; color: white;
+      border: 1px solid #46516c;
+    }
+    button { padding: 12px; background: #3978ed; color: white; border: 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>RYDON AI 2.0</h1>
+  <p>Your personal AI assistant</p>
+  <div id="chat">
+    <div class="msg ai">Hey! I'm Rydon AI. How can I help you?</div>
+  </div>
+  <form id="form">
+    <input id="message" placeholder="Message Rydon AI..." required>
+    <button id="send" type="submit">Send</button>
+  </form>
+  <p id="status">Ready</p>
+  <script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('form');
+    const input = document.getElementById('message');
+    const send = document.getElementById('send');
+    const status = document.getElementById('status');
+    const history = [];
+
+    function addMessage(text, who) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + who;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage(message, 'user');
+      input.value = '';
+      send.disabled = true;
+      status.textContent = 'Thinking...';
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({message, history})
+        });
+        const data = await res.json();
+        addMessage(data.reply || 'No response received.', 'ai');
+        history.push({role: 'user', content: message});
+        history.push({role: 'assistant', content: data.reply || ''});
+        status.textContent = res.ok ? 'Connected' : 'HTTP ' + res.status;
+      } catch (err) {
+        addMessage('Could not connect to the server. Try again.', 'ai');
+        status.textContent = 'Connection failed';
+      } finally {
+        send.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
