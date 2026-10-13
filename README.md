@@ -87,3 +87,23 @@ You can also add the chat directly to a site that allows iframes. Replace the di
 ```
 
 The embedded panel uses the same hosted chat API as the main site, so the AI provider must be configured on Render. The iframe is served from RYDON AI's domain; it does not give the host website access to the user's chat content. For public production use, monitor API usage and add rate limiting/abuse protection before sharing widely. Embedding may be restricted by the other website's own security policy.
+
+
+## Accounts and subscriptions
+
+The main chat page includes account creation, login/logout, and Free, Plus, and Pro plan choices. Passwords are stored as salted password hashes; they are never stored as plain text. The current default account store is SQLite at \`instance/rydon_accounts.sqlite3\`, or at the path specified by \`RYDON_DATABASE_PATH\`.
+
+**Production persistence:** the default SQLite file on a typical Render web service may be lost when the service is replaced or redeployed. Before accepting real users, configure durable storage (for example, a managed database and a production-ready database adapter) or attach an appropriate persistent disk and set \`RYDON_DATABASE_PATH\` to its mounted path. Do not treat ephemeral storage as a production account database.
+
+### Enabling paid subscriptions
+
+Paid checkout is intentionally disabled until Stripe is configured. In the Render service's Environment settings, configure:
+
+- \`STRIPE_SECRET_KEY\`: secret API key from the Stripe dashboard.
+- \`STRIPE_PRICE_PLUS\`: Stripe recurring Price ID for the Plus plan.
+- \`STRIPE_PRICE_PRO\`: Stripe recurring Price ID for the Pro plan.
+- \`STRIPE_WEBHOOK_SECRET\`: signing secret for the Stripe webhook endpoint \`/api/billing/webhook\`.
+
+Create recurring prices in Stripe that match the terms you want to offer. Configure the Stripe webhook to send at least \`checkout.session.completed\`, \`customer.subscription.updated\`, and \`customer.subscription.deleted\` events to \`https://rydon-ai-2.onrender.com/api/billing/webhook\`. Use test-mode Stripe keys and test prices first. Never paste API keys into source code or commit them to GitHub.
+
+The plan cards do not charge users by themselves. A paid plan becomes active only after a valid signed Stripe webhook confirms the subscription. Feature-specific usage limits and entitlements must also be implemented and tested before advertising paid tiers.
