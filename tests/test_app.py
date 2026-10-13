@@ -82,6 +82,93 @@ def test_creative_studio_page_loads():
     assert b"Image generator" in response.data
 
 
+
+def test_account_register_login_and_duplicate_email():
+    import uuid
+    email = "rydon-test-" + uuid.uuid4().hex + "@example.com"
+    c = client()
+    registered = c.post("/api/auth/register", json={
+        "name": "Test User",
+        "email": email,
+        "password": "a-strong-test-password",
+    })
+    assert registered.status_code == 201
+    assert registered.get_json()["account"]["plan"] == "free"
+    assert registered.get_json()["account"]["email"] == email
+
+    duplicate = c.post("/api/auth/register", json={
+        "name": "Test User",
+        "email": email,
+        "password": "a-strong-test-password",
+    })
+    assert duplicate.status_code == 409
+
+    c.post("/api/auth/logout")
+    bad_login = c.post("/api/auth/login", json={
+        "email": email,
+        "password": "wrong-password",
+    })
+    assert bad_login.status_code == 401
+
+    login = c.post("/api/auth/login", json={
+        "email": email,
+        "password": "a-strong-test-password",
+    })
+    assert login.status_code == 200
+    assert login.get_json()["account"]["email"] == email
+
+
+def test_account_registration_validates_password_and_email():
+    c = client()
+    short_password = c.post("/api/auth/register", json={
+        "name": "Test User",
+        "email": "user@example.com",
+        "password": "short",
+    })
+    assert short_password.status_code == 400
+
+    bad_email = c.post("/api/auth/register", json={
+        "name": "Test User",
+        "email": "not-an-email",
+        "password": "a-strong-test-password",
+    })
+    assert bad_email.status_code == 400
+
+
+def test_paid_checkout_requires_login_and_configuration(monkeypatch):
+    for name in (
+        "STRIPE_SECRET_KEY", "STRIPE_PRICE_PLUS",
+        "STRIPE_PRICE_PRO", "STRIPE_WEBHOOK_SECRET",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    c = client()
+    response = c.post("/api/billing/checkout", json={"plan": "plus"})
+    assert response.status_code == 401
+
+    import uuid
+    c.post("/api/auth/register", json={
+        "name": "Billing Test",
+        "email": "billing-" + uuid.uuid4().hex + "@example.com",
+        "password": "a-strong-test-password",
+    })
+    response = c.post("/api/billing/checkout", json={"plan": "plus"})
+    assert response.status_code == 503
+    assert "STRIPE_SECRET_KEY" in response.get_json()["error"]
+
+
+def test_account_can_select_free_plan():
+    import uuid
+    c = client()
+    c.post("/api/auth/register", json={
+        "name": "Free Plan Test",
+        "email": "free-" + uuid.uuid4().hex + "@example.com",
+        "password": "a-strong-test-password",
+    })
+    response = c.post("/api/account/plan", json={"plan": "free"})
+    assert response.status_code == 200
+    assert response.get_json()["account"]["plan"] == "free"
+
+
 def test_studio_document_uses_configured_ai(monkeypatch):
     rydon_app.API_KEY = "test-key"
     monkeypatch.setattr(
