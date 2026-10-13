@@ -617,25 +617,33 @@ def studio_edit():
     else:
         return jsonify({"error": "Use a valid JPEG, PNG, or WebP image."}), 400
 
+    tier = str(request.form.get("provider", "free")).strip().lower()
+    if tier not in ("free", "paid"):
+        return jsonify({"error": "Choose either the free or paid provider option."}), 400
+    prefix = "RYDON_FREE_IMAGE_EDIT" if tier == "free" else "RYDON_PAID_IMAGE_EDIT"
     base = (
-        os.environ.get("RYDON_IMAGE_EDIT_API_BASE", "")
+        os.environ.get(prefix + "_API_BASE", "")
+        or os.environ.get("RYDON_IMAGE_EDIT_API_BASE", "")
         or os.environ.get("RYDON_IMAGE_API_BASE", "")
     ).strip().rstrip("/")
     key = (
-        os.environ.get("RYDON_IMAGE_EDIT_API_KEY", "")
+        os.environ.get(prefix + "_API_KEY", "")
+        or os.environ.get("RYDON_IMAGE_EDIT_API_KEY", "")
         or os.environ.get("RYDON_IMAGE_API_KEY", "")
     ).strip()
     model = (
-        os.environ.get("RYDON_IMAGE_EDIT_MODEL", "")
+        os.environ.get(prefix + "_MODEL", "")
+        or os.environ.get("RYDON_IMAGE_EDIT_MODEL", "")
         or os.environ.get("RYDON_IMAGE_MODEL", "")
     ).strip()
     if not base or not key or not model:
         return jsonify({
             "error": (
-                "Photo editing is not configured yet. In Render, set "
-                "RYDON_IMAGE_EDIT_API_BASE, RYDON_IMAGE_EDIT_API_KEY and "
-                "RYDON_IMAGE_EDIT_MODEL to an image-editing API that supports "
-                "the OpenAI-compatible /images/edits endpoint. Keep keys private."
+                "The " + tier + " photo-editing provider is not configured yet. "
+                "In Render, set " + prefix + "_API_BASE, " + prefix + "_API_KEY, "
+                "and " + prefix + "_MODEL to an image-editing API compatible with "
+                "the OpenAI /images/edits endpoint. Shared RYDON_IMAGE_EDIT_* "
+                "settings can be used as a fallback. Keep keys private."
             )
         }), 503
 
