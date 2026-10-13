@@ -23,6 +23,15 @@
 <div class="actions"><button class="btn primary" id="makeImage">Generate image</button><button class="btn" id="clearImage">Clear</button></div><div class="status" id="imageStatus" role="status"></div><div id="imageResult"></div>
 <p class="small">Image generation needs an image-capable provider configured on the server. Never put provider API keys in this page.</p>
 </section>
+
+<section class="card"><h2>🪄 Photo editor</h2><p>Upload a photo and describe the change. For example: “Give me neat dreadlocks, keep my face and skin tone unchanged.”</p>
+<label for="editPhoto">Choose a photo (JPEG, PNG, or WebP; under 5 MB)</label><input class="field" id="editPhoto" type="file" accept="image/jpeg,image/png,image/webp">
+<div id="editOriginalWrap"></div>
+<label for="editPrompt">How should RYDON edit it?</label><textarea class="field" id="editPrompt" placeholder="Change my hairstyle to neat dreadlocks. Preserve my face, expression, skin tone, clothing, and background."></textarea>
+<div class="actions"><button class="btn primary" id="editPhotoBtn">Edit photo</button><button class="btn" id="clearEdit">Clear</button></div><div class="status" id="editStatus" role="status"></div><div id="editResult"></div>
+<p class="small">Your upload is processed in memory and is not saved by this app. Actual editing requires an image-editing API configured in Render. Free and paid provider quotas/costs vary.</p>
+</section>
+
 </div>
 <footer class="small" style="padding:24px 2px">RYDON AI can make mistakes. Check important information. · <a href="/copyright">Copyright &amp; ownership</a></footer>
 </main>
@@ -33,5 +42,41 @@ $('makeDoc').addEventListener('click',async()=>{const prompt=$('docPrompt').valu
 $('clearDoc').addEventListener('click',()=>{$('docPrompt').value='';$('docContent').value='';$('docStatus').textContent=''});
 document.querySelectorAll('[data-export]').forEach(btn=>btn.addEventListener('click',async()=>{const content=$('docContent').value;if(!content.trim()){$('docStatus').textContent='Generate or enter document text first.';return}btn.disabled=true;$('docStatus').textContent='Preparing download…';try{const response=await fetch('/api/studio/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,format:btn.dataset.export,filename:($('docKind').value||'rydon-document').toLowerCase().replace(/[^a-z0-9]+/g,'-')})});if(!response.ok){let e={};try{e=await response.json()}catch(_){}throw new Error(e.error||'Export failed')}const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rydon-document.'+btn.dataset.export;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);$('docStatus').textContent='Download prepared.'}catch(e){$('docStatus').textContent=e.message}finally{btn.disabled=false}}));
 $('makeImage').addEventListener('click',async()=>{const prompt=$('imagePrompt').value.trim();if(!prompt){$('imageStatus').textContent='Describe the image first.';return}const btn=$('makeImage');btn.disabled=true;$('imageStatus').textContent='Requesting image…';$('imageResult').replaceChildren();try{const data=await requestJSON('/api/studio/image',{prompt});const img=document.createElement('img');img.className='image-preview';img.alt='AI-generated image';if(data.url)img.src=data.url;else if(data.b64_json)img.src='data:image/png;base64,'+data.b64_json;else throw new Error('No image was returned');$('imageResult').appendChild(img);const link=document.createElement('a');link.className='btn';link.textContent='Open image';link.href=img.src;link.target='_blank';link.rel='noopener';link.style.display='inline-block';link.style.marginTop='10px';$('imageResult').appendChild(link);$('imageStatus').textContent='Image generated.'}catch(e){$('imageStatus').textContent=e.message}finally{btn.disabled=false}});
+
+const editFile=$('editPhoto');
+editFile.addEventListener('change',()=>{
+  $('editOriginalWrap').replaceChildren();
+  const file=editFile.files&&editFile.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){$('editStatus').textContent='Choose an image smaller than 5 MB.';editFile.value='';return}
+  const preview=document.createElement('img');preview.className='image-preview';preview.alt='Selected original photo';preview.src=URL.createObjectURL(file);
+  $('editOriginalWrap').appendChild(preview);$('editStatus').textContent='Photo selected. Describe the edit you want.';
+});
+$('editPhotoBtn').addEventListener('click',async()=>{
+  const file=editFile.files&&editFile.files[0],prompt=$('editPrompt').value.trim();
+  if(!file){$('editStatus').textContent='Choose a photo first.';return}
+  if(!prompt){$('editStatus').textContent='Describe the edit first.';return}
+  const btn=$('editPhotoBtn'),form=new FormData();form.append('image',file);form.append('prompt',prompt);
+  btn.disabled=true;$('editStatus').textContent='Editing your photo… this can take a little while.';$('editResult').replaceChildren();
+  try{
+    const response=await fetch('/api/studio/edit',{method:'POST',body:form});let data={};try{data=await response.json()}catch(_){}
+    if(!response.ok)throw new Error(data.error||'Photo editing failed. Try again.');
+    const img=document.createElement('img');img.className='image-preview';img.alt='AI-edited photo';img.src=data.url||('data:'+(data.mime_type||'image/png')+';base64,'+data.b64_json);
+    if(!data.url&&!data.b64_json)throw new Error('The provider returned no image.');
+    $('editResult').appendChild(img);
+    const link=document.createElement('a');link.className='btn';link.textContent='Download edited photo';link.href=img.src;link.download='rydon-edited-photo.png';link.style.display='inline-block';link.style.marginTop='10px';$('editResult').appendChild(link);
+    const again=document.createElement('button');again.className='btn';again.textContent='Edit this result again';again.style.margin='10px 0 0 8px';again.addEventListener('click',async()=>{
+      try{
+        const blob=await (await fetch(img.src)).blob();const nextFile=new File([blob],'rydon-edited-photo.png',{type:blob.type||'image/png'});
+        const transfer=new DataTransfer();transfer.items.add(nextFile);editFile.files=transfer.files;
+        $('editOriginalWrap').replaceChildren();const preview=document.createElement('img');preview.className='image-preview';preview.alt='Selected edited photo';preview.src=img.src;$('editOriginalWrap').appendChild(preview);$('editStatus').textContent='Edited result selected as the next source photo.';
+      }catch(_){$('editStatus').textContent='Download the result and choose it as a new photo to continue editing.'}
+    });$('editResult').appendChild(again);
+    $('editStatus').textContent='Photo edit complete.';
+  }catch(e){$('editStatus').textContent=e.message}
+  finally{btn.disabled=false}
+});
+$('clearEdit').addEventListener('click',()=>{editFile.value='';$('editPrompt').value='';$('editOriginalWrap').replaceChildren();$('editResult').replaceChildren();$('editStatus').textContent=''});
+
 $('clearImage').addEventListener('click',()=>{$('imagePrompt').value='';$('imageResult').replaceChildren();$('imageStatus').textContent=''});
 </script></body></html>
