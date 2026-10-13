@@ -529,18 +529,19 @@ def studio_document():
     kind = str(body.get("kind", "document")).strip().lower()[:40]
     if not prompt:
         return jsonify({"error": "Describe the document you want to create."}), 400
+    if not API_KEY:
+        return jsonify({"error": "AI writing is not configured. Add a valid GROQ_API_KEY or RYDON_API_KEY in Render Environment Variables."}), 503
     try:
         instruction = (
             "Write a polished " + kind + " based on this brief. Use useful headings, "
             "clear structure, and the requested tone. Return the complete artifact. "
             "Do not invent personal facts or official approvals. Brief: " + prompt
         )
-        if API_KEY:
-            result = ask_hosted_model(instruction, [], get_memory())
-        else:
-            result = ask_ollama(instruction, [], get_memory())
+        result = ask_hosted_model(instruction, [], get_memory())
         if not result or result.startswith("Configuration error:"):
             return jsonify({"error": result or "The AI provider returned no content."}), 503
+        if result.startswith("AI provider returned HTTP ") or result.startswith("RYDON AI couldn't connect"):
+            return jsonify({"error": result}), 502
         return jsonify({"ok": True, "content": result})
     except urllib.error.HTTPError as error:
         app.logger.warning("Studio document provider HTTP %s", error.code)
