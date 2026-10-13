@@ -55,7 +55,23 @@ The app displays a copyright notice and includes `COPYRIGHT.txt` and `docs/OWNER
 
 ## Embed RYDON AI on another website
 
-You can add the hosted RYDON AI chat panel to a site that allows iframes. Replace the dimensions to fit your page:
+### Option A: JavaScript snippet (quickest)
+
+Paste this snippet into the HTML where you want the chat to appear. It loads the hosted RYDON chat inside a responsive iframe; your website never receives the AI provider API key.
+
+```html
+<script
+  src="https://rydon-ai-2.onrender.com/static/rydon-widget.js"
+  data-height="560"
+  defer>
+</script>
+```
+
+You can change `data-height` to a number between 320 and 900 to adjust the widget height.
+
+### Option B: iframe
+
+You can also add the chat directly to a site that allows iframes. Replace the dimensions to fit your page:
 
 ```html
 <iframe
@@ -71,4 +87,3 @@ You can add the hosted RYDON AI chat panel to a site that allows iframes. Replac
 ```
 
 The embedded panel uses the same hosted chat API as the main site, so the AI provider must be configured on Render. The iframe is served from RYDON AI's domain; it does not give the host website access to the user's chat content. For public production use, monitor API usage and add rate limiting/abuse protection before sharing widely. Embedding may be restricted by the other website's own security policy.
-
