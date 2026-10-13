@@ -20,6 +20,20 @@ The included Render setup generates `RYDON_SECRET_KEY` automatically. Keep it se
 
 If `RYDON_API_KEY` is set, the app uses the hosted API; otherwise it uses local Ollama.
 
+## Install RYDON AI on Windows
+
+The hosted website can be installed as an app shortcut without installing Python:
+
+1. Open https://rydon-ai-2.onrender.com/ in Microsoft Edge or Chrome.
+2. In Edge, open the **…** menu → **Apps** → **Install this site as an app** (the wording can vary by version). In Chrome, open the **⋮** menu and look for **Cast, save, and share** or **Save and share** → **Install page as app**.
+3. Confirm **Install**. RYDON AI should then open in its own app window. Pin it to the taskbar or Start menu, or create a desktop shortcut if the browser offers that option.
+
+This uses the online version; your computer needs an internet connection for AI replies. The app shell may open offline, but chat, voice recognition and server features need the site/server connection. The first install option appears only after the site loads over HTTPS and the browser recognises its app manifest.
+
+## Copyright and ownership records
+
+The app displays a copyright notice and includes `COPYRIGHT.txt` and `docs/OWNERSHIP_AND_COPYRIGHT.md`. These are project records, not official government registration papers. For a formal filing, use the legal name of the actual owner/author, accurate dates, and disclose third-party components or collaborators as required. GitHub history and Render deployment records can help preserve evidence of development.
+
 ## Features
 
 - Responsive browser UI and chat history in browser local storage.
