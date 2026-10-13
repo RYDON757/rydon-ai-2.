@@ -221,15 +221,28 @@ def search_web(query):
             title = str(item.get("title", "Untitled"))[:200]
             url = str(item.get("url", ""))[:500]
             content = str(item.get("content", ""))[:900]
+            published_date = str(item.get("published_date") or "").strip()[:40]
+            score = item.get("score")
             lowered_url = url.lower().split("?", 1)[0].rstrip("/")
             generic_news_page = news_query and any(
                 marker in lowered_url for marker in (
                     "/section/", "/newsroom/industry", "/category/",
-                    "/tag/", "/topics/"
+                    "/tag/", "/topics/", "/newsroom/"
                 )
             )
-            if url and content and not generic_news_page:
-                snippets.append(f"Title: {title}\nURL: {url}\nSnippet: {content}")
+            try:
+                from urllib.parse import urlparse
+                parsed_url = urlparse(url)
+                valid_http_url = parsed_url.scheme in ("http", "https") and bool(parsed_url.netloc)
+            except Exception:
+                valid_http_url = False
+            if valid_http_url and content and not generic_news_page:
+                snippets.append(
+                    f"Title: {title}\nURL: {url}\n"
+                    f"Published date from search provider: {published_date or 'not supplied'}\n"
+                    f"Search relevance score: {score if score is not None else 'not supplied'}\n"
+                    f"Snippet: {content}"
+                )
         app.logger.info(
             "Web search completed; news_query=%s; usable_results=%s",
             news_query, len(snippets)
@@ -261,9 +274,18 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
             "Do not claim to remember details that are not present in this "
             "conversation or saved memory. Preserve exact user-provided names "
             "and codes instead of reinterpreting them. When web results are "
-            "provided, cite only exact URLs actually present in those results; "
-            "never replace an article URL with a publisher homepage, section page, or newsroom category. For news, distinguish the article publication date from dates of future events mentioned in the article. Do not state a publication date unless the result snippet supports it. If fewer than three reliable article sources are available, return fewer stories and explain the limitation rather than padding the list. Never invent article links, publication dates, or claims. If the sources "
-            "do not support a claim, say it could not be verified. "
+            "provided, treat them as search leads, not proof that every claim is true. "
+            "Use each result's title, snippet, URL, and provider-supplied publication date together; "
+            "do not combine a headline from one result with another result's URL or date. "
+            "Cite only exact URLs actually present in those results; never replace an article URL "
+            "with a publisher homepage, section page, or newsroom category. For news, distinguish "
+            "the article publication date from dates of future events mentioned in the article. "
+            "A provider-supplied date may be reported as the search result's date, but do not call "
+            "it independently verified unless the page content itself confirms it. If a date is "
+            "missing or unclear, say so. If fewer than three reliable article sources are available, "
+            "return fewer stories and explain the limitation rather than padding the list. Never "
+            "invent article links, publication dates, or claims. If the sources do not support a "
+            "claim, say it could not be verified. "
             "User-approved saved memory from this browser: "
             + (saved_memory[:4000] or "none") + "."
         )
@@ -314,7 +336,7 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
     payload = {
         "model": HOSTED_MODEL,
         "messages": messages,
-        "temperature": 0.7
+        "temperature": 0.2 if web_context else 0.7
     }
 
     req = urllib.request.Request(
