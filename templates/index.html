@@ -104,16 +104,18 @@
     .account-btn:hover{background:#21473c}
     .modal-backdrop{position:fixed;inset:0;z-index:100;background:#000b;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
     .modal-backdrop[hidden]{display:none}
-    .account-modal{width:min(760px,100%);max-height:min(90dvh,900px);overflow:auto;background:#1f1f1f;border:1px solid #444;border-radius:20px;box-shadow:0 24px 90px #0009;padding:22px}
-    .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
-    .modal-head h2{margin:0;font-size:1.35rem}.modal-head p{margin:5px 0 0;color:#aaa;font-size:.88rem}
+    .account-modal{position:relative;width:min(440px,100%);max-height:min(90dvh,900px);overflow:auto;background:#212121;border:1px solid #3d3d3d;border-radius:24px;box-shadow:0 24px 90px #0009;padding:30px 28px 26px}
+    .modal-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:0;margin-bottom:24px;padding:6px 24px 0}
+    .modal-head h2{margin:0;font-size:1.55rem;font-weight:650;letter-spacing:-.04em}.modal-head p{margin:8px 0 0;color:#aaa;font-size:.9rem;line-height:1.45}
+    .account-brandmark{width:44px;height:44px;border-radius:15px;background:linear-gradient(135deg,#10a37f,#4d9bff);display:grid;place-items:center;color:white;font-weight:800;font-size:1.35rem;margin:0 auto 17px;box-shadow:0 7px 25px #0004}
+    #closeAccountModal{position:absolute;top:0;right:0;width:34px;height:34px;padding:5px;border-radius:50%;font-size:15px}
     .modal-close{border:1px solid #444;background:#292929;color:#fff;border-radius:9px;padding:7px 11px}
-    .account-tabs{display:flex;gap:8px;margin:16px 0}
-    .account-tab{flex:1;border:1px solid #444;background:#292929;color:#ddd;border-radius:10px;padding:10px}
-    .account-tab.active{background:#17372f;border-color:#10a37f;color:#baf3df}
-    .account-field{display:block;width:100%;margin:10px 0 14px;background:#151515;border:1px solid #444;border-radius:10px;color:white;padding:12px;font:inherit}
-    .account-form label{font-size:.85rem;color:#ddd}
-    .account-primary{border:0;background:#10a37f;color:#fff;border-radius:10px;padding:11px 14px;font-weight:700;width:100%}
+    .account-tabs{display:flex;gap:4px;margin:0 0 22px;padding:4px;background:#171717;border:1px solid #383838;border-radius:12px}
+    .account-tab{flex:1;border:1px solid transparent;background:transparent;color:#aaa;border-radius:8px;padding:10px;font-weight:600}
+    .account-tab.active{background:#303030;border-color:#414141;color:#fff}
+    .account-field{display:block;width:100%;margin:8px 0 18px;background:#171717;border:1px solid #4a4a4a;border-radius:12px;color:white;padding:13px 14px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}.account-field:focus{border-color:#10a37f;box-shadow:0 0 0 3px #10a37f26}
+    .account-form label{font-size:.86rem;color:#e5e5e5;font-weight:550}
+    .account-primary{border:0;background:#f5f5f5;color:#171717;border-radius:12px;padding:13px 14px;font-weight:700;width:100%;transition:opacity .15s,transform .15s}.account-primary:hover{background:#e7e7e7}.account-primary:active{transform:scale(.99)}
     .account-primary:disabled{opacity:.55;cursor:wait}
     .account-message{min-height:1.5em;color:#baf3df;font-size:.85rem;margin:10px 0}
     .account-message.error{color:#ffb4b4}
@@ -124,7 +126,7 @@
     .plan-card ul{padding-left:18px;margin:0;flex:1}.plan-card button{margin-top:auto}
     .account-summary{border:1px solid #414141;background:#262626;border-radius:13px;padding:14px;margin:12px 0}
     .account-summary strong{display:block;font-size:1rem}.account-summary span{color:#aaa;font-size:.84rem}
-    @media(max-width:650px){.plan-grid{grid-template-columns:1fr}.account-modal{padding:16px}.top-actions .account-btn{font-size:.74rem;padding:7px 8px}}
+    @media(max-width:650px){.plan-grid{grid-template-columns:1fr}.account-modal{padding:26px 20px 22px;border-radius:22px}.top-actions .account-btn{font-size:.74rem;padding:7px 8px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
   <link rel="stylesheet" href="/static/workspace.css?v=2">
@@ -180,8 +182,10 @@
 <div class="modal-backdrop" id="accountBackdrop" hidden>
   <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
     <div class="modal-head">
-      <div><h2 id="accountModalTitle">Your RYDON account</h2><p>Sign in, create an account, or manage your subscription.</p></div>
       <button class="modal-close" id="closeAccountModal" type="button" aria-label="Close account window">✕</button>
+      <div class="account-brandmark" aria-hidden="true">R</div>
+      <h2 id="accountModalTitle">Welcome to RYDON AI</h2>
+      <p>Log in or create an account to continue</p>
     </div>
     <div id="accountSignedOut">
       <div class="account-tabs">
@@ -200,7 +204,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="account-primary" id="managePlans" type="button" style="flex:1">View plans</button><button class="modal-close" id="logoutButton" type="button">Log out</button></div>
     </div>
     <div class="account-message" id="accountMessage" role="status" aria-live="polite"></div>
-    <div id="subscriptionArea">
+    <div id="subscriptionArea" hidden>
       <h3 style="margin:18px 0 4px">Choose your plan</h3>
       <p style="color:#aaa;font-size:.85rem;margin:0">Choose Free or a paid subscription. Paid access activates only after the payment provider confirms it.</p>
       <div class="plan-grid">
@@ -421,15 +425,16 @@
     document.getElementById('accountPassword').autocomplete = registering ? 'new-password' : 'current-password';
     document.getElementById('accountPassword').placeholder = registering ? 'Create a password (10+ characters)' : 'Your password';
     document.getElementById('accountSubmit').textContent = registering ? 'Create account' : 'Log in';
-    document.getElementById('subscriptionArea').hidden = false;
     showAccountMessage('');
   }
   function openAccountModal(showPlans=false){
     accountBackdrop.hidden = false;
     document.body.style.overflow = 'hidden';
+    document.getElementById('subscriptionArea').hidden = !showPlans;
     if(showPlans) document.getElementById('subscriptionArea').scrollIntoView({behavior:'smooth',block:'start'});
     showAccountMessage('');
     refreshAccount();
+    if(!showPlans) setTimeout(()=>document.getElementById('accountEmail').focus(),0);
   }
   function closeAccountModal(){
     accountBackdrop.hidden = true;
