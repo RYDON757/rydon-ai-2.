@@ -175,6 +175,7 @@
         <div class="composer-tools">
           <label class="file-label" for="file">＋ Attach document</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
           <button class="tool-btn" id="createImage" type="button" aria-pressed="false">✦ Create image</button>
+          <button class="tool-btn" id="createDocument" type="button" aria-pressed="false">▤ Make document</button>
           <button class="tool-btn" id="editImage" type="button">▧ Edit photo</button>
           <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="tool-btn" id="webSearch" type="button" aria-pressed="false">◎ Web search</button>
@@ -252,6 +253,8 @@
   const createImageButton = document.getElementById('createImage');
   const editImageButton = document.getElementById('editImage');
   const imageFileInput = document.getElementById('imageFile');
+  const createDocumentButton = document.getElementById('createDocument');
+  let documentMode = false;
   let imageMode = '';
   let selectedImageFile = null;
   const webSearch = document.getElementById('webSearch');
@@ -379,6 +382,21 @@
     if (!imageMode && !selectedImageFile) input.placeholder = 'Message RYDON AI...';
   }
   createImageButton.addEventListener('click',()=>setImageMode('generate'));
+  createDocumentButton.addEventListener('click',()=>{
+    documentMode=!documentMode;
+    if(documentMode){
+      imageMode='';selectedImageFile=null;imageFileInput.value='';
+      createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');
+      editImageButton.classList.remove('mode-active');createDocumentButton.classList.add('mode-active');
+      input.placeholder='Describe the document you want to create…';
+      status.textContent='Document creation mode · describe the content and format';
+    }else{
+      createDocumentButton.classList.remove('mode-active');
+      input.placeholder='Message RYDON AI...';status.textContent='Ready';
+    }
+    createDocumentButton.setAttribute('aria-pressed',String(documentMode));
+  });
+
   editImageButton.addEventListener('click',()=>{
     imageMode='edit';
     createImageButton.classList.remove('mode-active');
@@ -400,6 +418,26 @@
       input.placeholder='Describe how to edit this photo…';input.focus();
     }
   });
+  async function appendDocumentExports(content){
+    const target=chat.querySelector('.msg-row:last-child .msg-content');
+    if(!target)return;
+    const actions=document.createElement('div');actions.className='image-result-actions';
+    ['txt','docx','pdf'].forEach(format=>{
+      const button=document.createElement('button');button.type='button';button.className='tool-btn';button.textContent='Download '+format.toUpperCase();
+      button.addEventListener('click',async()=>{
+        button.disabled=true;status.textContent='Preparing '+format.toUpperCase()+' download…';
+        try{
+          const response=await fetch('/api/studio/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,format,filename:'rydon-document'})});
+          if(!response.ok){let data={};try{data=await response.json()}catch(_){}throw new Error(data.error||'Document export failed.')}
+          const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+          a.href=url;a.download='rydon-document.'+format;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);status.textContent='Document downloaded.';
+        }catch(error){status.textContent=error.message||'Could not export document.'}
+        finally{button.disabled=false}
+      });
+      actions.appendChild(button);
+    });
+    target.appendChild(actions);
+  }
   function appendImageResult(src, downloadName){
     const target=chat.querySelector('.msg-row:last-child .msg-content');
     if(!target||!src)return;
@@ -439,7 +477,15 @@
     status.textContent=imageMode==='generate'?'Creating image…':imageMode==='edit'?'Editing photo…':'Thinking…';
     badge.textContent='● Working';
     try{
-      if(imageMode==='generate'){
+      if(documentMode){
+        const response=await fetch('/api/studio/document',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'professional document',prompt:message})});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Document creation failed.');
+        const content=String(data.content||'');if(!content.trim())throw new Error('The AI provider returned an empty document.');
+        addMessage(content,'ai');await appendDocumentExports(content);
+        history.push({role:'assistant',content:content});
+        documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
+        input.placeholder='Message RYDON AI...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
+      }else if(imageMode==='generate'){
         const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
         const src=data.url||(data.b64_json?'data:image/png;base64,'+data.b64_json:'');
