@@ -331,3 +331,41 @@ def test_unknown_chat_mode_falls_back_to_normal_chat(monkeypatch):
     assert response.status_code == 200
     assert response.get_json()["source"] == "local"
     assert "RYDON AI" in response.get_json()["reply"]
+
+def test_production_startup_fails_without_session_secret():
+    import os
+    import subprocess
+
+    env = os.environ.copy()
+    env["RENDER"] = "true"
+    env.pop("RYDON_SECRET_KEY", None)
+    result = subprocess.run(
+        [sys.executable, "-c", "import app"],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode != 0
+    assert "RYDON_SECRET_KEY must be configured in production" in result.stderr
+
+
+def test_local_development_keeps_fallback_secret():
+    import os
+    import subprocess
+
+    env = os.environ.copy()
+    env.pop("RENDER", None)
+    env.pop("RYDON_SECRET_KEY", None)
+    result = subprocess.run(
+        [sys.executable, "-c", "import app; print(app.app.secret_key)"],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "development-only-change-me"
+
