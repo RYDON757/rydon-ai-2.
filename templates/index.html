@@ -85,7 +85,13 @@
     .tool-btn:hover,.file-label:hover{background:#3c3c3c}
     .tool-btn.active{border-color:#10a37f;color:#7fe2c3;background:#17372f}
     .tool-btn:disabled{opacity:.45;cursor:wait}
-    #file{display:none}.statusline{max-width:820px;margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#888;font-size:.72rem;min-height:1.2em}
+    .tool-btn.mode-active{border-color:#10a37f;color:#8ee7ca;background:#17372f}
+    #file{display:none}
+    .chat-generated-image{display:block;max-width:min(100%,640px);max-height:640px;object-fit:contain;border-radius:14px;border:1px solid #454545;margin-top:12px;background:#171717}
+    .image-result-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+    .image-result-actions a{font-size:.8rem;color:#ddd;text-decoration:none;border:1px solid #555;border-radius:9px;padding:6px 10px}
+    .image-result-actions a:hover{background:#383838}
+    .statusline{max-width:820px;margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#888;font-size:.72rem;min-height:1.2em}
     .legal{font-size:.69rem;color:#777;text-align:center;padding:0 12px 9px}
     .legal a{color:#aaa;text-decoration:none}.legal a:hover{text-decoration:underline}
     .mobile-menu{display:none}
@@ -167,7 +173,10 @@
           <button class="send-btn" id="send" type="submit" title="Send message" aria-label="Send message">↑</button>
         </form>
         <div class="composer-tools">
-          <label class="file-label" for="file">＋ Attach</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+          <label class="file-label" for="file">＋ Attach document</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+          <button class="tool-btn" id="createImage" type="button" aria-pressed="false">✦ Create image</button>
+          <button class="tool-btn" id="editImage" type="button">▧ Edit photo</button>
+          <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="tool-btn" id="webSearch" type="button" aria-pressed="false">◎ Web search</button>
           <button class="tool-btn" id="voice" type="button">🎙 Voice</button>
           <button class="tool-btn" id="replyVoice" type="button">🔈 Read aloud</button>
