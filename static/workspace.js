@@ -95,8 +95,8 @@
         <div class="workspace-card"><h3>Clear local workspace data</h3><p>Deletes local chat history, saved memory, saved library notes, schedule tasks and saved instruction entries. This does not delete server-side account or billing data.</p><button class="workspace-action" id="clearAllLocal" style="border-color:#a44;color:#ffb4b4">Clear all local data</button></div>
         <div class="workspace-card"><h3>Privacy note</h3><p>These actions affect this browser only. To remove account information held by the service, use the service’s account/data deletion process if available.</p></div>`;
       $('clearCurrentChat').addEventListener('click',()=>{closePanel();$('clear').click()});
-      $('clearAllChats').addEventListener('click',()=>{if(!confirm('Delete every conversation stored in this browser? This cannot be undone.'))return;localStorage.removeItem('rydon_ai_conversations_v1');localStorage.removeItem('rydon_ai_chat_history_v1');location.reload()});
-      $('clearAllLocal').addEventListener('click',()=>{if(!confirm('Delete all local RYDON chats, memory, notes, tasks and saved instruction entries? This cannot be undone.'))return;['rydon_ai_conversations_v1','rydon_ai_chat_history_v1','rydon_ai_memory_v1',tasksKey,notesKey,promptsKey].forEach(k=>localStorage.removeItem(k));location.reload()});
+      $('clearAllChats').addEventListener('click',()=>{if(!confirm('Delete every conversation stored in this browser? This cannot be undone.'))return;localStorage.removeItem('rydon_ai_conversations_v1');localStorage.removeItem('rydon_ai_history_v2');location.reload()});
+      $('clearAllLocal').addEventListener('click',()=>{if(!confirm('Delete all local RYDON chats, memory, notes, tasks and saved instruction entries? This cannot be undone.'))return;['rydon_ai_conversations_v1','rydon_ai_chat_history_v1','rydon_ai_saved_memory_v1',tasksKey,notesKey,promptsKey].forEach(k=>localStorage.removeItem(k));location.reload()});
     }
   }
   nav.querySelectorAll('[data-workspace]').forEach(button=>button.addEventListener('click',()=>openPanel(button.dataset.workspace)));
