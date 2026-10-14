@@ -85,7 +85,13 @@
     .tool-btn:hover,.file-label:hover{background:#3c3c3c}
     .tool-btn.active{border-color:#10a37f;color:#7fe2c3;background:#17372f}
     .tool-btn:disabled{opacity:.45;cursor:wait}
-    #file{display:none}.statusline{max-width:820px;margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#888;font-size:.72rem;min-height:1.2em}
+    .tool-btn.mode-active{border-color:#10a37f;color:#8ee7ca;background:#17372f}
+    #file{display:none}
+    .chat-generated-image{display:block;max-width:min(100%,640px);max-height:640px;object-fit:contain;border-radius:14px;border:1px solid #454545;margin-top:12px;background:#171717}
+    .image-result-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+    .image-result-actions a{font-size:.8rem;color:#ddd;text-decoration:none;border:1px solid #555;border-radius:9px;padding:6px 10px}
+    .image-result-actions a:hover{background:#383838}
+    .statusline{max-width:820px;margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#888;font-size:.72rem;min-height:1.2em}
     .legal{font-size:.69rem;color:#777;text-align:center;padding:0 12px 9px}
     .legal a{color:#aaa;text-decoration:none}.legal a:hover{text-decoration:underline}
     .mobile-menu{display:none}
@@ -167,7 +173,11 @@
           <button class="send-btn" id="send" type="submit" title="Send message" aria-label="Send message">↑</button>
         </form>
         <div class="composer-tools">
-          <label class="file-label" for="file">＋ Attach</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+          <label class="file-label" for="file">＋ Attach document</label><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf">
+          <button class="tool-btn" id="createImage" type="button" aria-pressed="false">✦ Create image</button>
+          <button class="tool-btn" id="createDocument" type="button" aria-pressed="false">▤ Make document</button>
+          <button class="tool-btn" id="editImage" type="button">▧ Edit photo</button>
+          <input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp" style="display:none">
           <button class="tool-btn" id="webSearch" type="button" aria-pressed="false">◎ Web search</button>
           <button class="tool-btn" id="voice" type="button">🎙 Voice</button>
           <button class="tool-btn" id="replyVoice" type="button">🔈 Read aloud</button>
@@ -240,6 +250,13 @@
   const badge = document.getElementById('connectionBadge');
   const fileInput = document.getElementById('file');
   const fileStatus = document.getElementById('fileStatus');
+  const createImageButton = document.getElementById('createImage');
+  const editImageButton = document.getElementById('editImage');
+  const imageFileInput = document.getElementById('imageFile');
+  const createDocumentButton = document.getElementById('createDocument');
+  let documentMode = false;
+  let imageMode = '';
+  let selectedImageFile = null;
   const webSearch = document.getElementById('webSearch');
   const voiceButton = document.getElementById('voice');
   const replyVoiceButton = document.getElementById('replyVoice');
@@ -355,6 +372,88 @@
   }
   function autoSize(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,180)+'px'}
   input.addEventListener('input',autoSize);
+  function setImageMode(mode){
+    imageMode = imageMode === mode ? '' : mode;
+    createImageButton.classList.toggle('mode-active', imageMode === 'generate');
+    createImageButton.setAttribute('aria-pressed', String(imageMode === 'generate'));
+    editImageButton.classList.toggle('mode-active', imageMode === 'edit');
+    input.placeholder = imageMode === 'generate' ? 'Describe the image to create…' : imageMode === 'edit' ? 'Describe how to edit your photo…' : (selectedImageFile ? 'Describe the edit for your photo…' : 'Message RYDON AI...');
+    status.textContent = imageMode === 'generate' ? 'Image creation mode · describe what you want' : imageMode === 'edit' ? 'Photo editing mode · choose a photo' : 'Ready';
+    if (!imageMode && !selectedImageFile) input.placeholder = 'Message RYDON AI...';
+  }
+  createImageButton.addEventListener('click',()=>{
+    documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
+    setImageMode('generate');
+  });
+  createDocumentButton.addEventListener('click',()=>{
+    documentMode=!documentMode;
+    if(documentMode){
+      imageMode='';selectedImageFile=null;imageFileInput.value='';
+      createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');
+      editImageButton.classList.remove('mode-active');createDocumentButton.classList.add('mode-active');
+      input.placeholder='Describe the document you want to create…';
+      status.textContent='Document creation mode · describe the content and format';
+    }else{
+      createDocumentButton.classList.remove('mode-active');
+      input.placeholder='Message RYDON AI...';status.textContent='Ready';
+    }
+    createDocumentButton.setAttribute('aria-pressed',String(documentMode));
+  });
+
+  editImageButton.addEventListener('click',()=>{
+    documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
+    imageMode='edit';
+    createImageButton.classList.remove('mode-active');
+    createImageButton.setAttribute('aria-pressed','false');
+    editImageButton.classList.add('mode-active');
+    input.placeholder='Describe how to edit your photo…';
+    imageFileInput.click();
+  });
+  imageFileInput.addEventListener('change',()=>{
+    selectedImageFile = imageFileInput.files && imageFileInput.files[0] || null;
+    if(selectedImageFile && selectedImageFile.size > 5*1024*1024){
+      selectedImageFile=null;imageFileInput.value='';
+      status.textContent='Choose an image smaller than 5 MB.';return;
+    }
+    if(selectedImageFile){
+      imageMode='edit';editImageButton.classList.add('mode-active');
+      createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');
+      fileStatus.textContent='Photo attached: '+selectedImageFile.name;
+      input.placeholder='Describe how to edit this photo…';input.focus();
+    }
+  });
+  async function appendDocumentExports(content){
+    const target=chat.querySelector('.msg-row:last-child .msg-content');
+    if(!target)return;
+    const actions=document.createElement('div');actions.className='image-result-actions';
+    ['txt','docx','pdf'].forEach(format=>{
+      const button=document.createElement('button');button.type='button';button.className='tool-btn';button.textContent='Download '+format.toUpperCase();
+      button.addEventListener('click',async()=>{
+        button.disabled=true;status.textContent='Preparing '+format.toUpperCase()+' download…';
+        try{
+          const response=await fetch('/api/studio/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content,format,filename:'rydon-document'})});
+          if(!response.ok){let data={};try{data=await response.json()}catch(_){}throw new Error(data.error||'Document export failed.')}
+          const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+          a.href=url;a.download='rydon-document.'+format;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);status.textContent='Document downloaded.';
+        }catch(error){status.textContent=error.message||'Could not export document.'}
+        finally{button.disabled=false}
+      });
+      actions.appendChild(button);
+    });
+    target.appendChild(actions);
+  }
+  function appendImageResult(src, downloadName){
+    const target=chat.querySelector('.msg-row:last-child .msg-content');
+    if(!target||!src)return;
+    const img=document.createElement('img');
+    img.className='chat-generated-image';
+    img.alt=downloadName==='rydon-edited-photo.png'?'AI-edited photo':'AI-generated image';
+    img.src=src;
+    const actions=document.createElement('div');actions.className='image-result-actions';
+    const open=document.createElement('a');open.href=src;open.target='_blank';open.rel='noopener noreferrer';open.textContent='Open image';
+    const download=document.createElement('a');download.href=src;download.download=downloadName;download.textContent='Download image';
+    actions.append(open,download);target.append(img,actions);chat.scrollTop=chat.scrollHeight;
+  }
   document.getElementById('newChat').addEventListener('click',newChat);
   document.getElementById('closeSidebar').addEventListener('click',()=>sidebar.classList.toggle('collapsed'));
   document.getElementById('openSidebar').addEventListener('click',()=>sidebar.classList.toggle('mobile-open'));
@@ -378,14 +477,51 @@
     rememberFromMessage(message);ensureConversation(message);
     if(chat.querySelector('.welcome'))chat.innerHTML='';
     addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
-    input.value='';autoSize();send.disabled=true;status.textContent='Thinking…';badge.textContent='● Working';
+    input.value='';autoSize();send.disabled=true;
+    status.textContent=imageMode==='generate'?'Creating image…':imageMode==='edit'?'Editing photo…':'Thinking…';
+    badge.textContent='● Working';
     try{
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\n')})});
-      const data=await res.json();const reply=data.reply||'No response received.';addMessage(reply,'ai');history.push({role:'assistant',content:reply});history=history.slice(-60);saveCurrent();
-      status.textContent=res.ok?'Connected':'Request failed (HTTP '+res.status+')';badge.textContent=res.ok?'● Connected':'● Error';
-      if(speakReplies&&'speechSynthesis'in window&&data.reply){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(reply))}
-    }catch(err){addMessage('Could not connect to the server. Please try again.','ai');history.push({role:'assistant',content:'Could not connect to the server. Please try again.'});saveCurrent();status.textContent='Connection failed';badge.textContent='● Offline'}
-    finally{send.disabled=false;input.focus()}
+      if(documentMode){
+        const response=await fetch('/api/studio/document',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'professional document',prompt:message})});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Document creation failed.');
+        const content=String(data.content||'');if(!content.trim())throw new Error('The AI provider returned an empty document.');
+        addMessage(content,'ai');await appendDocumentExports(content);
+        history.push({role:'assistant',content:content});
+        documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
+        input.placeholder='Message RYDON AI...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
+      }else if(imageMode==='generate'){
+        const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
+        const src=data.url||(data.b64_json?'data:image/png;base64,'+data.b64_json:'');
+        if(!src)throw new Error('The provider returned no image.');
+        addMessage('Here is your generated image.','ai');appendImageResult(src,'rydon-generated-image.png');
+        history.push({role:'assistant',content:'Here is your generated image. [Image shown in this chat]'});
+        status.textContent='Image generated';badge.textContent='● Connected';
+      }else if(imageMode==='edit'){
+        if(!selectedImageFile)throw new Error('Choose a photo with Edit photo, then describe the changes.');
+        const payload=new FormData();payload.append('image',selectedImageFile);payload.append('prompt',message);payload.append('provider','free');
+        const response=await fetch('/api/studio/edit',{method:'POST',body:payload});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Photo editing failed.');
+        const src=data.url||(data.b64_json?'data:'+(data.mime_type||'image/png')+';base64,'+data.b64_json:'');
+        if(!src)throw new Error('The provider returned no edited image.');
+        addMessage('Here is your edited photo.','ai');appendImageResult(src,'rydon-edited-photo.png');
+        history.push({role:'assistant',content:'Here is your edited photo. [Image shown in this chat]'});
+        selectedImageFile=null;imageFileInput.value='';fileStatus.textContent='No image attached';
+        status.textContent='Photo edit complete';badge.textContent='● Connected';
+      }else{
+        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\\n')})});
+        const data=await res.json();const reply=data.reply||'No response received.';
+        if(!res.ok)throw new Error(reply);
+        addMessage(reply,'ai');history.push({role:'assistant',content:reply});
+        status.textContent='Connected';badge.textContent='● Connected';
+        if(speakReplies&&'speechSynthesis'in window&&data.reply){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(reply))}
+      }
+      history=history.slice(-60);saveCurrent();
+    }catch(err){
+      const messageText=err.message||'Could not complete the request. Please try again.';
+      addMessage(messageText,'ai');history.push({role:'assistant',content:messageText});history=history.slice(-60);saveCurrent();
+      status.textContent=messageText;badge.textContent='● Error';
+    }finally{send.disabled=false;input.focus()}
   });
   voiceButton.addEventListener('click',()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
