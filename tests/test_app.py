@@ -299,3 +299,35 @@ def test_studio_edit_provider_specific_configuration_error(monkeypatch):
     )
     assert response.status_code == 503
     assert "RYDON_PAID_IMAGE_EDIT_API_BASE" in response.get_json()["error"]
+
+
+def test_code_mode_uses_ai_provider_instead_of_local_quick_replies(monkeypatch):
+    rydon_app.API_KEY = "test-key"
+    seen = {}
+
+    def fake_hosted(message, history, memory, document_context="", web_context="", saved_memory="", mode="chat"):
+        seen["mode"] = mode
+        return "Coding assistant response."
+
+    monkeypatch.setattr(rydon_app, "ask_hosted_model", fake_hosted)
+    response = client().post("/api/chat", json={
+        "message": "hello",
+        "mode": "code",
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()["reply"] == "Coding assistant response."
+    assert response.get_json()["source"] == "hosted"
+    assert seen["mode"] == "code"
+
+
+def test_unknown_chat_mode_falls_back_to_normal_chat(monkeypatch):
+    rydon_app.API_KEY = ""
+    response = client().post("/api/chat", json={
+        "message": "hello",
+        "mode": "not-a-mode",
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()["source"] == "local"
+    assert "RYDON AI" in response.get_json()["reply"]
