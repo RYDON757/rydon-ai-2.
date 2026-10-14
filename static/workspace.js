@@ -15,7 +15,7 @@
     <button class="side-btn" type="button" data-workspace="instructions"><span class="glyph">☷</span> Recent instructions</button>
     <button class="side-btn" type="button" data-workspace="clear"><span class="glyph">⌫</span> Clear app data</button>`;
   const recentLabel = Array.from(sidebar.querySelectorAll('.section-label')).find(x => x.textContent.trim().toLowerCase() === 'recent');
-  if (recentLabel) recentLabel.insertAdjacentElement('afterend', nav);
+  if (recentLabel) recentLabel.insertAdjacentElement('beforebegin', nav);
   const backdrop = document.createElement('div');
   backdrop.className = 'workspace-drawer-backdrop';
   backdrop.id = 'workspaceDrawer';
