@@ -48,7 +48,7 @@ The app displays a copyright notice and includes `COPYRIGHT.txt` and `docs/OWNER
 
 - Public hosting does not automatically provide free AI inference. A provider API key and available quota are needed for hosted AI replies. Provider usage may cost money; review current pricing and limits.
 - Profile memory is stored in a signed browser session cookie, not a cloud database. Chat history stays in the visitor's browser local storage. Clearing browser data clears that history.
-- This starter has no user accounts or shared cloud conversation database. Do not treat it as a medical, financial, or other high-stakes service.
+- The app includes account creation and login backed by a local SQLite database, but it does not provide a shared cloud conversation database. Chat history is stored in each browser's local storage, and profile memory is held in a signed browser cookie. Do not treat it as a medical, financial, or other high-stakes service.
 - The hosting platform may sleep on a free tier and take time to wake. Check the host's current plan limits.
 - Use a strong secret key in production and keep API keys only in the hosting provider's environment settings.
 
