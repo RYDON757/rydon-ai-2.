@@ -20,9 +20,16 @@ from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "RYDON_SECRET_KEY", "development-only-change-me"
-)
+# Never allow the known development fallback to sign production sessions.
+# Render's Blueprint generates RYDON_SECRET_KEY; fail closed if it is missing.
+_running_on_render = os.environ.get("RENDER", "").lower() == "true"
+_configured_secret = os.environ.get("RYDON_SECRET_KEY", "").strip()
+if _running_on_render and not _configured_secret:
+    raise RuntimeError(
+        "RYDON_SECRET_KEY must be configured in production; refusing to start "
+        "with the development fallback secret."
+    )
+app.secret_key = _configured_secret or "development-only-change-me"
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
