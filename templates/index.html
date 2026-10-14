@@ -249,6 +249,11 @@
   const badge = document.getElementById('connectionBadge');
   const fileInput = document.getElementById('file');
   const fileStatus = document.getElementById('fileStatus');
+  const createImageButton = document.getElementById('createImage');
+  const editImageButton = document.getElementById('editImage');
+  const imageFileInput = document.getElementById('imageFile');
+  let imageMode = '';
+  let selectedImageFile = null;
   const webSearch = document.getElementById('webSearch');
   const voiceButton = document.getElementById('voice');
   const replyVoiceButton = document.getElementById('replyVoice');
@@ -364,6 +369,49 @@
   }
   function autoSize(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,180)+'px'}
   input.addEventListener('input',autoSize);
+  function setImageMode(mode){
+    imageMode = imageMode === mode ? '' : mode;
+    createImageButton.classList.toggle('mode-active', imageMode === 'generate');
+    createImageButton.setAttribute('aria-pressed', String(imageMode === 'generate'));
+    editImageButton.classList.toggle('mode-active', imageMode === 'edit');
+    input.placeholder = imageMode === 'generate' ? 'Describe the image to create…' : imageMode === 'edit' ? 'Describe how to edit your photo…' : (selectedImageFile ? 'Describe the edit for your photo…' : 'Message RYDON AI...');
+    status.textContent = imageMode === 'generate' ? 'Image creation mode · describe what you want' : imageMode === 'edit' ? 'Photo editing mode · choose a photo' : 'Ready';
+    if (!imageMode && !selectedImageFile) input.placeholder = 'Message RYDON AI...';
+  }
+  createImageButton.addEventListener('click',()=>setImageMode('generate'));
+  editImageButton.addEventListener('click',()=>{
+    imageMode='edit';
+    createImageButton.classList.remove('mode-active');
+    createImageButton.setAttribute('aria-pressed','false');
+    editImageButton.classList.add('mode-active');
+    input.placeholder='Describe how to edit your photo…';
+    imageFileInput.click();
+  });
+  imageFileInput.addEventListener('change',()=>{
+    selectedImageFile = imageFileInput.files && imageFileInput.files[0] || null;
+    if(selectedImageFile && selectedImageFile.size > 5*1024*1024){
+      selectedImageFile=null;imageFileInput.value='';
+      status.textContent='Choose an image smaller than 5 MB.';return;
+    }
+    if(selectedImageFile){
+      imageMode='edit';editImageButton.classList.add('mode-active');
+      createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');
+      fileStatus.textContent='Photo attached: '+selectedImageFile.name;
+      input.placeholder='Describe how to edit this photo…';input.focus();
+    }
+  });
+  function appendImageResult(src, downloadName){
+    const target=chat.querySelector('.msg-row:last-child .msg-content');
+    if(!target||!src)return;
+    const img=document.createElement('img');
+    img.className='chat-generated-image';
+    img.alt=downloadName==='rydon-edited-photo.png'?'AI-edited photo':'AI-generated image';
+    img.src=src;
+    const actions=document.createElement('div');actions.className='image-result-actions';
+    const open=document.createElement('a');open.href=src;open.target='_blank';open.rel='noopener noreferrer';open.textContent='Open image';
+    const download=document.createElement('a');download.href=src;download.download=downloadName;download.textContent='Download image';
+    actions.append(open,download);target.append(img,actions);chat.scrollTop=chat.scrollHeight;
+  }
   document.getElementById('newChat').addEventListener('click',newChat);
   document.getElementById('closeSidebar').addEventListener('click',()=>sidebar.classList.toggle('collapsed'));
   document.getElementById('openSidebar').addEventListener('click',()=>sidebar.classList.toggle('mobile-open'));
@@ -387,14 +435,43 @@
     rememberFromMessage(message);ensureConversation(message);
     if(chat.querySelector('.welcome'))chat.innerHTML='';
     addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
-    input.value='';autoSize();send.disabled=true;status.textContent='Thinking…';badge.textContent='● Working';
+    input.value='';autoSize();send.disabled=true;
+    status.textContent=imageMode==='generate'?'Creating image…':imageMode==='edit'?'Editing photo…':'Thinking…';
+    badge.textContent='● Working';
     try{
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\n')})});
-      const data=await res.json();const reply=data.reply||'No response received.';addMessage(reply,'ai');history.push({role:'assistant',content:reply});history=history.slice(-60);saveCurrent();
-      status.textContent=res.ok?'Connected':'Request failed (HTTP '+res.status+')';badge.textContent=res.ok?'● Connected':'● Error';
-      if(speakReplies&&'speechSynthesis'in window&&data.reply){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(reply))}
-    }catch(err){addMessage('Could not connect to the server. Please try again.','ai');history.push({role:'assistant',content:'Could not connect to the server. Please try again.'});saveCurrent();status.textContent='Connection failed';badge.textContent='● Offline'}
-    finally{send.disabled=false;input.focus()}
+      if(imageMode==='generate'){
+        const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
+        const src=data.url||(data.b64_json?'data:image/png;base64,'+data.b64_json:'');
+        if(!src)throw new Error('The provider returned no image.');
+        addMessage('Here is your generated image.','ai');appendImageResult(src,'rydon-generated-image.png');
+        history.push({role:'assistant',content:'Here is your generated image. [Image shown in this chat]'});
+        status.textContent='Image generated';badge.textContent='● Connected';
+      }else if(imageMode==='edit'){
+        if(!selectedImageFile)throw new Error('Choose a photo with Edit photo, then describe the changes.');
+        const payload=new FormData();payload.append('image',selectedImageFile);payload.append('prompt',message);payload.append('provider','free');
+        const response=await fetch('/api/studio/edit',{method:'POST',body:payload});
+        const data=await response.json();if(!response.ok)throw new Error(data.error||'Photo editing failed.');
+        const src=data.url||(data.b64_json?'data:'+(data.mime_type||'image/png')+';base64,'+data.b64_json:'');
+        if(!src)throw new Error('The provider returned no edited image.');
+        addMessage('Here is your edited photo.','ai');appendImageResult(src,'rydon-edited-photo.png');
+        history.push({role:'assistant',content:'Here is your edited photo. [Image shown in this chat]'});
+        selectedImageFile=null;imageFileInput.value='';fileStatus.textContent='No image attached';
+        status.textContent='Photo edit complete';badge.textContent='● Connected';
+      }else{
+        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\\n')})});
+        const data=await res.json();const reply=data.reply||'No response received.';
+        if(!res.ok)throw new Error(reply);
+        addMessage(reply,'ai');history.push({role:'assistant',content:reply});
+        status.textContent='Connected';badge.textContent='● Connected';
+        if(speakReplies&&'speechSynthesis'in window&&data.reply){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(reply))}
+      }
+      history=history.slice(-60);saveCurrent();
+    }catch(err){
+      const messageText=err.message||'Could not complete the request. Please try again.';
+      addMessage(messageText,'ai');history.push({role:'assistant',content:messageText});history=history.slice(-60);saveCurrent();
+      status.textContent=messageText;badge.textContent='● Error';
+    }finally{send.disabled=false;input.focus()}
   });
   voiceButton.addEventListener('click',()=>{
     const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
