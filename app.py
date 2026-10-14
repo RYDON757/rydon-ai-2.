@@ -318,7 +318,7 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
     messages = [{
         "role": "system",
         "content": (
-            mode_instruction + "
+            mode_instruction + " " +
             "Be clear and practical. The user may prefer casual English "
             "or Swahili/Sheng; adapt naturally. Known user name: "
             + (memory.get("user_name") or "not provided") + ". "
@@ -458,7 +458,7 @@ def ask_ollama(message, history, memory, document_context="", web_context="", sa
     messages = [{
         "role": "system",
         "content": (
-            mode_instruction + "
+            mode_instruction + " " +
             "Be clear and practical. Adapt naturally to English or "
             "Swahili/Sheng. Known user name: "
             + (memory.get("user_name") or "not provided") + ". "
