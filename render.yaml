@@ -14,7 +14,7 @@ services:
       - key: RYDON_API_BASE
         value: https://api.groq.com/openai/v1
       - key: RYDON_HOSTED_MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: RYDON_MODEL
         value: qwen2.5:3b
       - key: RYDON_API_KEY
