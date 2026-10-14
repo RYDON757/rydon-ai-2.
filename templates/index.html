@@ -279,7 +279,7 @@
     const filtered=conversations.filter(c=>!q||c.title.toLowerCase().includes(q)||c.messages.some(m=>String(m.content).toLowerCase().includes(q))).sort((a,b)=>(b.updated||0)-(a.updated||0));
     if(!filtered.length){const empty=document.createElement('div');empty.style.cssText='padding:12px 9px;color:#777;font-size:.82rem';empty.textContent=q?'No matching chats':'Your conversations will appear here.';chatList.appendChild(empty);return}
     filtered.forEach(c=>{
-      const row=document.createElement('div');row.className='chat-item'+(c.id===activeId?' active':'');
+      const row=document.createElement('div');row.className='chat-item'+(c.id===activeId?' active':'');row.dataset.chatId=c.id;
       const label=document.createElement('span');label.textContent=c.title;label.title=c.title;
       const del=document.createElement('button');del.className='delete-chat';del.type='button';del.textContent='×';del.title='Delete chat';del.setAttribute('aria-label','Delete '+c.title);
       del.addEventListener('click',e=>{e.stopPropagation();if(!confirm('Delete this conversation?'))return;conversations=conversations.filter(x=>x.id!==c.id);if(activeId===c.id){activeId=null;history=[];showWelcome()}persist();renderChatList()});
@@ -516,5 +516,6 @@
   if('serviceWorker'in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/service-worker.js').catch(()=>{}))}
 </script>
   <script src="/static/workspace.js?v=4" defer></script>
+  <script src="/static/chatgpt-tools.js?v=1" defer></script>
 </body>
 </html>
