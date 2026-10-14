@@ -359,7 +359,7 @@
         const title=prompt('What should the reminder say?',text.slice(0,140));if(!title||!title.trim())return;
         const date=prompt('Reminder date (YYYY-MM-DD)',new Date().toISOString().slice(0,10));if(!date)return;
         const time=prompt('Reminder time (24-hour HH:MM)','18:00');if(!time)return;
-        if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){status.textContent='Use date YYYY-MM-DD and time HH:MM.';return}
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){status.textContent='Use date YYYY-MM-DD and time HH:MM.';return}
         try{const key='rydon_workspace_tasks_v1',items=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(items))throw new Error('Invalid task storage');items.unshift({title:title.trim().slice(0,180),date,time,done:false,reminded:false});localStorage.setItem(key,JSON.stringify(items.slice(0,100)));status.textContent='Reminder saved on this device. Notifications require permission and this page to remain open.'}
         catch(_){status.textContent='Could not save reminder in browser storage.'}
       });
@@ -488,11 +488,11 @@
   webSearch.addEventListener('click',()=>{webEnabled=!webEnabled;webSearch.classList.toggle('active',webEnabled);webSearch.setAttribute('aria-pressed',String(webEnabled));status.textContent=webEnabled?'Web search enabled':'Web search disabled'});
   document.getElementById('settings').addEventListener('click',()=>alert('RYDON AI tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
   document.getElementById('memory').addEventListener('click',()=>{
-    const current=savedMemory.join('\\n');
-    const action=prompt('Edit your local RYDON memory. One preference per line. This stays in this browser.\\n\\nType CLEAR to erase it, or edit the lines below:',current);
+    const current=savedMemory.join('\n');
+    const action=prompt('Edit your local RYDON memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
     if(action===null)return;
     if(action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Local memory erased.';return}
-    savedMemory=action.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.slice(0,500)).slice(-30);
+    savedMemory=action.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.slice(0,500)).slice(-30);
     try{localStorage.setItem(MEMORY_KEY,JSON.stringify(savedMemory));status.textContent='Local memory updated on this device.'}
     catch(_){status.textContent='Could not save local memory. Browser storage may be full.'}
   });
