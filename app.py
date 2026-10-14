@@ -21,9 +21,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 # Never use the known development fallback to sign production sessions.
+# Render and Railway both terminate public HTTPS in front of the app. Keep local
+# HTTP development usable, but require a configured secret on hosted deployments.
 _running_on_render = os.environ.get("RENDER", "").lower() == "true"
+_running_on_railway = bool(os.environ.get("RAILWAY_PUBLIC_DOMAIN") or os.environ.get("RAILWAY_ENVIRONMENT_NAME"))
+_running_in_production = _running_on_render or _running_on_railway
 _configured_secret = os.environ.get("RYDON_SECRET_KEY", "").strip()
-if _running_on_render and not _configured_secret:
+if _running_in_production and not _configured_secret:
     raise RuntimeError(
         "RYDON_SECRET_KEY must be configured in production; refusing to start "
         "with the development fallback secret."
@@ -32,8 +36,8 @@ app.secret_key = _configured_secret or "development-only-change-me"
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    # Render serves the public site over HTTPS; keep local HTTP development usable.
-    SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
+    # Public hosted deployments use HTTPS; keep local HTTP development usable.
+    SESSION_COOKIE_SECURE=_running_in_production,
     # Leave room for multipart overhead around the existing 5 MB upload cap.
     MAX_CONTENT_LENGTH=6 * 1024 * 1024,
 )
@@ -306,8 +310,8 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
     if not API_KEY:
         app.logger.error("Hosted AI unavailable: API key is missing.")
         return (
-            "Configuration error: set GROQ_API_KEY in Render "
-            "Environment Variables."
+            "Configuration error: set GROQ_API_KEY or RYDON_API_KEY in your hosting service's "
+            "environment variables."
         )
 
     mode = mode if mode in ("chat", "code") else "chat"
@@ -445,7 +449,7 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
         )
         return (
             f"AI provider returned HTTP {error.code}. "
-            "Check your API key, model access, and Render logs."
+            "Check your API key, model access, and hosting service logs."
         )
 
     except Exception:
@@ -1252,7 +1256,7 @@ def chat():
             web_search_note = (
                 "\n\nNote: Live web search is not configured yet, so this "
                 "answer is based on the AI model's existing knowledge. "
-                "Add TAVILY_API_KEY in Render to enable live results."
+                "Add TAVILY_API_KEY in your hosting service's environment variables to enable live results."
             )
             app.logger.warning("Web search requested but TAVILY_API_KEY is missing.")
         else:
