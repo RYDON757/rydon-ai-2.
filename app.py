@@ -389,11 +389,9 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
         headers={
             "Authorization": "Bearer " + API_KEY,
             "Content-Type": "application/json",
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/131.0.0.0 Safari/537.36"
-            )
+            # Identify this as a server-side client instead of impersonating
+            # a desktop browser, which can trigger upstream bot-protection rules.
+            "User-Agent": "RYDON-AI/2.0 (+https://rydon-ai-2.onrender.com)"
         },
         method="POST"
     )
