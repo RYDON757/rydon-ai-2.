@@ -7,10 +7,10 @@ A responsive browser-based RYDON AI assistant with chat history, per-browser pro
 1. Create a GitHub account if you do not already have one.
 2. Create a **new private repository** on GitHub named `rydon-ai-2` and upload the contents of this folder (not the ZIP itself). Do not commit API keys or passwords.
 3. Create an account at [Render](https://render.com/), choose **New + → Blueprint**, and connect your GitHub repository. Render will read `render.yaml`.
-4. In the service's Environment settings, set `RYDON_API_KEY` to an API key from your chosen compatible provider. The included defaults are for Groq: `RYDON_API_BASE=https://api.groq.com/openai/v1` and `RYDON_MODEL=llama-3.3-70b-versatile`. Check the provider's current model list and pricing/limits before use. Never put the API key in `static/app.js`, HTML, or a public repository.
+4. In the service's Environment settings, set `RYDON_API_KEY` to an API key from your chosen compatible provider. The included defaults are for Groq: `RYDON_API_BASE=https://api.groq.com/openai/v1` and `RYDON_HOSTED_MODEL=openai/gpt-oss-120b`. `RYDON_MODEL=qwen2.5:3b` is the local Ollama model. Check the provider's current model list and pricing/limits before use. Never put the API key in `static/app.js`, HTML, or a public repository.
 5. Deploy. When the build completes, Render gives you a public HTTPS URL you can open on your phone and share with other people.
 
-The included Render setup generates `RYDON_SECRET_KEY` automatically. Keep it secret. If you choose a different OpenAI-compatible provider, change `RYDON_API_BASE` and `RYDON_MODEL` to the values in that provider's documentation.
+The included Render setup generates `RYDON_SECRET_KEY` automatically. Keep it secret. If you choose a different OpenAI-compatible provider, change `RYDON_API_BASE` and `RYDON_HOSTED_MODEL` to the values in that provider's documentation.
 
 ## Run locally on Windows
 
@@ -38,7 +38,7 @@ The app displays a copyright notice and includes `COPYRIGHT.txt` and `docs/OWNER
 
 - Responsive browser UI and chat history in browser local storage.
 - Per-browser signed session memory for the user's name; different visitors do not share a global name.
-- Hosted model API support via `RYDON_API_KEY`, `RYDON_API_BASE`, and `RYDON_MODEL`.
+- Hosted model API support via `RYDON_API_KEY`, `RYDON_API_BASE`, and `RYDON_HOSTED_MODEL`.
 - Local Ollama support for development.
 - Browser speech-to-text where supported and text-to-speech for replies. Speech recognition generally requires HTTPS or localhost and browser permission.
 - Built-in date/time/joke/name replies and a safe arithmetic parser.

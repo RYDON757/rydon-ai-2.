@@ -10,7 +10,7 @@
 2. Choose **New + → Blueprint** and select `rydon-ai-2`.
 3. Review the service settings loaded from `render.yaml` and create/deploy the service.
 4. In the Render service environment settings, set `RYDON_API_KEY` to a key from your chosen OpenAI-compatible provider. Do not paste it into source files or GitHub.
-5. Confirm `RYDON_API_BASE` and `RYDON_MODEL` match that provider's current API documentation and available models. The current defaults in `render.yaml` are Groq's OpenAI-compatible endpoint and `llama-3.3-70b-versatile`; verify availability before relying on them.
+5. Confirm `RYDON_API_BASE` and `RYDON_HOSTED_MODEL` match that provider's current API documentation and available models. The current hosted defaults in `render.yaml` are Groq's OpenAI-compatible endpoint and `openai/gpt-oss-120b`. `RYDON_MODEL=qwen2.5:3b` is the local Ollama model.
 6. Wait for a successful deploy, then open the public `https://...onrender.com` URL.
 
 ## Smoke tests after deployment
