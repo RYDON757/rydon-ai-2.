@@ -26,6 +26,48 @@
       <div class="workspace-drawer-body" id="workspaceBody"></div>
     </section>`;
   document.body.appendChild(backdrop);
+  // Keep the workspace windows visually consistent with RYDON's main chat UI.
+  const workspaceStyle = document.createElement('style');
+  workspaceStyle.id = 'rydon-workspace-redesign';
+  workspaceStyle.textContent = `
+    .workspace-drawer-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,32px);background:rgba(0,0,0,.66);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+    .workspace-drawer-backdrop[hidden]{display:none!important}
+    .workspace-drawer{width:min(900px,100%);max-height:min(88dvh,900px);overflow:hidden;display:flex;flex-direction:column;background:#202020;border:1px solid #454545;border-radius:22px;box-shadow:0 28px 100px rgba(0,0,0,.55);color:#f5f5f5;animation:rydonWorkspaceIn .18s ease-out}
+    .workspace-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:25px 28px 21px;border-bottom:1px solid #383838;background:linear-gradient(135deg,rgba(16,163,127,.13),transparent 60%)}
+    .workspace-drawer-head h2{margin:0 0 7px;font-size:clamp(1.35rem,3vw,1.8rem);font-weight:720;letter-spacing:-.04em}
+    .workspace-drawer-head p{margin:0;color:#aaa;font-size:.92rem;line-height:1.5;max-width:620px}
+    #workspaceClose{flex:0 0 38px;width:38px;height:38px;border-radius:12px;border:1px solid #444;background:#2a2a2a;color:#ddd;font-size:18px}
+    #workspaceClose:hover{background:#383838;color:white}
+    .workspace-drawer-body{padding:24px 28px 30px;overflow:auto;overscroll-behavior:contain;min-height:180px}
+    .workspace-drawer-body h3{font-size:1rem;letter-spacing:-.015em;margin:0 0 12px}
+    .workspace-card{background:#262626;border:1px solid #3b3b3b;border-radius:16px;padding:17px;margin:0 0 13px;min-width:0}
+    .workspace-card p{color:#b9b9b9;line-height:1.55;font-size:.9rem;overflow-wrap:anywhere}
+    .workspace-card small{color:#999;line-height:1.5}
+    .workspace-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .workspace-row>div{flex:1;min-width:130px}
+    .workspace-input,.workspace-textarea{display:block;width:100%;max-width:100%;margin:7px 0 16px;padding:12px 13px;color:#f5f5f5;background:#171717;border:1px solid #454545;border-radius:11px;outline:none}
+    .workspace-input:focus,.workspace-textarea:focus{border-color:#10a37f;box-shadow:0 0 0 3px rgba(16,163,127,.15)}
+    .workspace-textarea{min-height:105px;resize:vertical;line-height:1.5}
+    .workspace-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 13px;border:1px solid #484848;border-radius:10px;background:#303030;color:#f4f4f4;text-decoration:none;font-size:.86rem;font-weight:600;transition:background .15s,border-color .15s,transform .15s}
+    .workspace-action:hover{background:#3a3a3a;border-color:#606060}
+    .workspace-action:active{transform:scale(.985)}
+    .workspace-action.primary{background:#10a37f;border-color:#10a37f;color:white}
+    .workspace-action.primary:hover{background:#0e916f;border-color:#0e916f}
+    .workspace-action:disabled{opacity:.55;cursor:wait}
+    .workspace-empty{padding:26px 18px;text-align:center;border:1px dashed #484848;border-radius:14px;color:#aaa;background:rgba(255,255,255,.015)}
+    .workspace-note{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+    .workspace-nav{display:flex;flex-direction:column;gap:3px}
+    .workspace-nav .workspace-divider{height:1px;background:#303030;margin:7px 2px 9px}
+    .workspace-nav [data-workspace]{width:100%;min-height:40px;border-radius:10px;font-size:.9rem}
+    .workspace-nav [data-workspace]:hover{background:#292929}
+    .workspace-nav [data-workspace]:focus-visible,.workspace-action:focus-visible,#workspaceClose:focus-visible{outline:2px solid #10a37f;outline-offset:2px}
+    .workspace-nav .glyph{display:inline-grid;place-items:center;width:22px;height:22px;color:#c8c8c8;font-size:1rem}
+    .workspace-nav .nav-meta{margin-left:auto;color:#aaa;font-size:.72rem;border:1px solid #414141;border-radius:6px;padding:2px 6px}
+    @keyframes rydonWorkspaceIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @media(max-width:760px){.workspace-drawer-backdrop{padding:0;align-items:flex-end}.workspace-drawer{width:100%;max-height:94dvh;border-radius:20px 20px 0 0;border-bottom:0}.workspace-drawer-head{padding:20px 18px 16px}.workspace-drawer-body{padding:18px 16px calc(22px + env(safe-area-inset-bottom))}.workspace-card{padding:14px}.workspace-row{align-items:flex-start}.workspace-nav [data-workspace]{min-height:43px}}
+    @media(prefers-reduced-motion:reduce){.workspace-drawer{animation:none}.workspace-action{transition:none}}
+  `;
+  document.head.appendChild(workspaceStyle);
   const body = $('workspaceBody');
   const tasksKey = 'rydon_workspace_tasks_v1';
   const notesKey = 'rydon_workspace_library_v1';
@@ -109,18 +151,19 @@
       });
     } else if(activePanel==='schedule') {
       const tasks=readArray(tasksKey);
-      body.innerHTML=`<h3>Add a task</h3><form id="workspaceTaskForm"><label for="workspaceTask">Task</label><input class="workspace-input" id="workspaceTask" maxlength="180" required placeholder="e.g. Test Android installation"><label for="workspaceTaskDate">Date (optional)</label><input class="workspace-input" id="workspaceTaskDate" type="date"><button class="workspace-action primary" type="submit">＋ Add task</button></form><div style="height:12px"></div><h3>Your tasks (${tasks.length})</h3>`+
-        (tasks.length?tasks.map((t,i)=>`<div class="workspace-card workspace-row"><div><strong style="${t.done?'text-decoration:line-through;color:#999':''}">${escapeHTML(t.title)}</strong><p>${escapeHTML(t.date||'No date set')}</p></div><button class="workspace-action" data-task-done="${i}" type="button">${t.done?'Undo':'Done'}</button><button class="workspace-action" data-task-delete="${i}" type="button" aria-label="Delete task">✕</button></div>`).join(''):'<div class="workspace-empty">No tasks yet. Add a task above.</div>')+
+      body.innerHTML=`<h3>Add a task</h3><form id="workspaceTaskForm"><label for="workspaceTask">Task</label><input class="workspace-input" id="workspaceTask" maxlength="180" required placeholder="e.g. Test Android installation"><div class="workspace-row"><div><label for="workspaceTaskDate">Date (optional)</label><input class="workspace-input" id="workspaceTaskDate" type="date"></div><div><label for="workspaceTaskTime">Time (optional)</label><input class="workspace-input" id="workspaceTaskTime" type="time"></div></div><button class="workspace-action primary" type="submit">＋ Add task</button></form><div style="height:12px"></div><h3>Your tasks (${tasks.length})</h3>`+
+        (tasks.length?tasks.map((t,i)=>`<div class="workspace-card workspace-row"><div><strong style="${t.done?'text-decoration:line-through;color:#999':''}">${escapeHTML(t.title)}</strong><p>${escapeHTML([t.date,t.time].filter(Boolean).join(' · ')||'No date set')}</p></div><button class="workspace-action" data-task-done="${i}" type="button">${t.done?'Undo':'Done'}</button><button class="workspace-action" data-task-delete="${i}" type="button" aria-label="Delete task">✕</button></div>`).join(''):'<div class="workspace-empty">No tasks yet. Add a task above.</div>')+
         '<p style="color:#999;font-size:.78rem">Tasks are stored in this browser only. They do not trigger reminders or scheduled AI actions.</p>';
-      $('workspaceTaskForm').addEventListener('submit',e=>{e.preventDefault();const title=$('workspaceTask').value.trim();if(!title)return;const list=readArray(tasksKey);list.unshift({title,date:$('workspaceTaskDate').value,done:false});writeArray(tasksKey,list.slice(0,100));renderPanel();});
+      $('workspaceTaskForm').addEventListener('submit',e=>{e.preventDefault();const title=$('workspaceTask').value.trim();if(!title)return;const list=readArray(tasksKey);list.unshift({title,date:$('workspaceTaskDate').value,time:$('workspaceTaskTime').value,done:false});writeArray(tasksKey,list.slice(0,100));renderPanel();});
       body.querySelectorAll('[data-task-done]').forEach(b=>b.addEventListener('click',()=>{const list=readArray(tasksKey),i=Number(b.dataset.taskDone);if(list[i])list[i].done=!list[i].done;writeArray(tasksKey,list);renderPanel()}));
       body.querySelectorAll('[data-task-delete]').forEach(b=>b.addEventListener('click',()=>{const list=readArray(tasksKey);list.splice(Number(b.dataset.taskDelete),1);writeArray(tasksKey,list);renderPanel()}));
     } else if(activePanel==='library') {
       const notes=readArray(notesKey);
-      body.innerHTML=`<h3>Save a note</h3><form id="workspaceNoteForm"><label for="workspaceNoteTitle">Title</label><input class="workspace-input" id="workspaceNoteTitle" maxlength="120" required placeholder="Note title"><label for="workspaceNoteText">Text</label><textarea class="workspace-textarea" id="workspaceNoteText" maxlength="12000" required placeholder="Paste notes, ideas or useful text here"></textarea><button class="workspace-action primary" type="submit">＋ Save to library</button></form><div style="height:12px"></div><div class="workspace-row"><h3>Saved notes (${notes.length})</h3><button class="workspace-action" id="exportLibrary" type="button">Export notes</button></div>`+
-      (notes.length?notes.map((n,i)=>`<div class="workspace-card"><div class="workspace-row"><strong>${escapeHTML(n.title)}</strong><button class="workspace-action" data-note-delete="${i}" type="button">Delete</button></div><p class="workspace-note">${escapeHTML(n.text)}</p><small>Saved in this browser</small></div>`).join(''):'<div class="workspace-empty">Your saved notes will appear here.</div>');
+      body.innerHTML=`<h3>Save a note</h3><form id="workspaceNoteForm"><label for="workspaceNoteTitle">Title</label><input class="workspace-input" id="workspaceNoteTitle" maxlength="120" required placeholder="Note title"><label for="workspaceNoteText">Text</label><textarea class="workspace-textarea" id="workspaceNoteText" maxlength="12000" required placeholder="Paste notes, ideas or useful text here"></textarea><button class="workspace-action primary" type="submit">＋ Save to library</button></form><div style="height:12px"></div><div class="workspace-row"><h3>Saved notes (${notes.length})</h3><button class="workspace-action" id="exportLibrary" type="button">Export notes</button></div><input class="workspace-input" id="workspaceLibrarySearch" type="search" placeholder="Search your saved notes…" aria-label="Search saved notes">`+
+      (notes.length?notes.map((n,i)=>`<div class="workspace-card" data-note-search="${escapeHTML((n.title+' '+n.text).toLowerCase())}"><div class="workspace-row"><strong>${escapeHTML(n.title)}</strong><button class="workspace-action" data-note-delete="${i}" type="button">Delete</button></div><p class="workspace-note">${escapeHTML(n.text)}</p><small>Saved in this browser</small></div>`).join(''):'<div class="workspace-empty">Your saved notes will appear here.</div>');
       $('workspaceNoteForm').addEventListener('submit',e=>{e.preventDefault();const title=$('workspaceNoteTitle').value.trim(),text=$('workspaceNoteText').value.trim();if(!title||!text)return;const list=readArray(notesKey);list.unshift({title,text,created:Date.now()});if(!writeArray(notesKey,list.slice(0,100))){alert('Could not save. Browser storage may be full.');return}renderPanel()});
       body.querySelectorAll('[data-note-delete]').forEach(b=>b.addEventListener('click',()=>{if(!confirm('Delete this saved note?'))return;const list=readArray(notesKey);list.splice(Number(b.dataset.noteDelete),1);writeArray(notesKey,list);renderPanel()}));
+      $('workspaceLibrarySearch').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();body.querySelectorAll('[data-note-search]').forEach(card=>{card.hidden=!card.dataset.noteSearch.includes(q)});});
       $('exportLibrary').addEventListener('click',()=>{const payload=JSON.stringify({app:'RYDON AI 2.0',exportedAt:new Date().toISOString(),notes:readArray(notesKey)},null,2);const blob=new Blob([payload],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='rydon-library-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
     } else if(activePanel==='plugins') {
       body.innerHTML=`

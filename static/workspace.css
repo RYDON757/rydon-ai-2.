@@ -27,3 +27,19 @@
 .workspace-row button{flex-shrink:0}
 .workspace-note{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:760px){.workspace-drawer{width:100%;border-left:0}.workspace-drawer-head,.workspace-drawer-body{padding:17px}.workspace-nav .side-btn{padding:10px}}
+
+/* Refined ChatGPT-inspired workspace navigation and accessible responsive states */
+.workspace-nav{display:flex;flex-direction:column;gap:3px}
+.workspace-nav .side-btn{width:100%;min-height:40px;border-radius:10px;font-size:.9rem;transition:background .15s ease,color .15s ease}
+.workspace-nav .side-btn:hover{background:#292929;color:#fff}
+.workspace-nav .side-btn:focus-visible,.workspace-action:focus-visible{outline:2px solid var(--accent,#10a37f);outline-offset:2px}
+.workspace-nav .nav-meta{border:1px solid #414141;border-radius:6px;padding:2px 6px}
+.workspace-drawer-body{overscroll-behavior:contain;scrollbar-gutter:stable}
+.workspace-input:focus,.workspace-textarea:focus,.workspace-select:focus{outline:none;border-color:var(--accent,#10a37f);box-shadow:0 0 0 3px #10a37f26}
+.workspace-card[hidden]{display:none!important}
+.workspace-row{flex-wrap:wrap}
+.workspace-row>div{min-width:0}
+.workspace-action{cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease}
+.workspace-action:active{transform:scale(.985)}
+@media(max-width:760px){.workspace-drawer{max-height:94dvh;border-radius:20px 20px 0 0}.workspace-drawer-head{padding:20px 18px 16px}.workspace-drawer-body{padding:18px 16px calc(22px + env(safe-area-inset-bottom))}.workspace-nav .side-btn{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.workspace-action,.workspace-nav .side-btn{transition:none}}

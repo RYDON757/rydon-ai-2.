@@ -127,7 +127,7 @@
     @media(max-width:650px){.plan-grid{grid-template-columns:1fr}.account-modal{padding:16px}.top-actions .account-btn{font-size:.74rem;padding:7px 8px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
   </style>
-  <link rel="stylesheet" href="/static/workspace.css?v=1">
+  <link rel="stylesheet" href="/static/workspace.css?v=2">
 </head>
 <body>
 <div class="app">
@@ -514,6 +514,6 @@
   if(conversations.length){const newest=conversations.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0];loadConversation(newest.id)}else{showWelcome()}
   if('serviceWorker'in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('/static/service-worker.js').catch(()=>{}))}
 </script>
-  <script src="/static/workspace.js?v=2" defer></script>
+  <script src="/static/workspace.js?v=4" defer></script>
 </body>
 </html>
