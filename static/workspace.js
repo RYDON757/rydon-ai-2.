@@ -81,7 +81,7 @@
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
               mode: 'code',
-              message: context ? task + '\\n\\nRelevant code or error:\\n' + context : task,
+              message: context ? task + '\n\nRelevant code or error:\n' + context : task,
               history: [],
               web_search: false
             })
