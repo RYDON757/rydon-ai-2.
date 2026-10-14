@@ -73,6 +73,29 @@
   const notesKey = 'rydon_workspace_library_v1';
   const promptsKey = 'rydon_workspace_recent_instructions_v1';
   let activePanel = '';
+  // Browser reminders work while this page is open; they are not server-side jobs.
+  function checkTaskReminders() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const tasks = readArray(tasksKey);
+    const now = Date.now();
+    let changed = false;
+    tasks.forEach(task => {
+      if (!task || task.done || task.reminded || !task.date || !task.time) return;
+      const due = new Date(task.date + 'T' + task.time + ':00').getTime();
+      if (!Number.isFinite(due) || now < due) return;
+      task.reminded = true;
+      changed = true;
+      // Avoid a stale notification when the app has been closed for a long time.
+      if (now - due <= 2 * 60 * 1000) {
+        try { new Notification('RYDON reminder', { body: task.title || 'A scheduled task is due.' }); } catch (_) {}
+      }
+    });
+    if (changed) writeArray(tasksKey, tasks);
+  }
+  if ('Notification' in window) {
+    window.setInterval(checkTaskReminders, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTaskReminders(); });
+  }
   const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const readArray = key => { try { const v=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(v)?v:[]; } catch (_) { return []; } };
   const writeArray = (key, value) => { try { localStorage.setItem(key,JSON.stringify(value)); return true; } catch (_) { return false; } };
@@ -151,10 +174,31 @@
       });
     } else if(activePanel==='schedule') {
       const tasks=readArray(tasksKey);
-      body.innerHTML=`<h3>Add a task</h3><form id="workspaceTaskForm"><label for="workspaceTask">Task</label><input class="workspace-input" id="workspaceTask" maxlength="180" required placeholder="e.g. Test Android installation"><div class="workspace-row"><div><label for="workspaceTaskDate">Date (optional)</label><input class="workspace-input" id="workspaceTaskDate" type="date"></div><div><label for="workspaceTaskTime">Time (optional)</label><input class="workspace-input" id="workspaceTaskTime" type="time"></div></div><button class="workspace-action primary" type="submit">＋ Add task</button></form><div style="height:12px"></div><h3>Your tasks (${tasks.length})</h3>`+
-        (tasks.length?tasks.map((t,i)=>`<div class="workspace-card workspace-row"><div><strong style="${t.done?'text-decoration:line-through;color:#999':''}">${escapeHTML(t.title)}</strong><p>${escapeHTML([t.date,t.time].filter(Boolean).join(' · ')||'No date set')}</p></div><button class="workspace-action" data-task-done="${i}" type="button">${t.done?'Undo':'Done'}</button><button class="workspace-action" data-task-delete="${i}" type="button" aria-label="Delete task">✕</button></div>`).join(''):'<div class="workspace-empty">No tasks yet. Add a task above.</div>')+
-        '<p style="color:#999;font-size:.78rem">Tasks are stored in this browser only. They do not trigger reminders or scheduled AI actions.</p>';
-      $('workspaceTaskForm').addEventListener('submit',e=>{e.preventDefault();const title=$('workspaceTask').value.trim();if(!title)return;const list=readArray(tasksKey);list.unshift({title,date:$('workspaceTaskDate').value,time:$('workspaceTaskTime').value,done:false});writeArray(tasksKey,list.slice(0,100));renderPanel();});
+      body.innerHTML=`<h3>Add a task</h3><form id="workspaceTaskForm"><label for="workspaceTask">Task</label><input class="workspace-input" id="workspaceTask" maxlength="180" required placeholder="e.g. Test Android installation"><div class="workspace-row"><div><label for="workspaceTaskDate">Date</label><input class="workspace-input" id="workspaceTaskDate" type="date"></div><div><label for="workspaceTaskTime">Time</label><input class="workspace-input" id="workspaceTaskTime" type="time"></div></div><button class="workspace-action primary" type="submit">＋ Add task</button></form><div class="workspace-card"><h3>Browser reminders</h3><p>Optional notifications can alert you while RYDON is open in this browser. They are not guaranteed if the tab or browser is closed, and they do not run server-side.</p><button class="workspace-action" id="enableTaskReminders" type="button">Enable browser reminders</button><small id="taskReminderStatus" role="status" aria-live="polite"></small></div><div style="height:12px"></div><h3>Your tasks (${tasks.length})</h3>`+
+        (tasks.length?tasks.map((t,i)=>`<div class="workspace-card workspace-row"><div><strong style="${t.done?'text-decoration:line-through;color:#999':''}">${escapeHTML(t.title)}</strong><p>${escapeHTML([t.date,t.time].filter(Boolean).join(' · ')||'No date set')}${t.reminded?' · Reminder sent':''}</p></div><button class="workspace-action" data-task-done="${i}" type="button">${t.done?'Undo':'Done'}</button><button class="workspace-action" data-task-delete="${i}" type="button" aria-label="Delete task">✕</button></div>`).join(''):'<div class="workspace-empty">No tasks yet. Add a task above.</div>')+
+        '<p style="color:#999;font-size:.78rem">Tasks are saved locally in this browser. Add both a date and time to a task to schedule a reminder.</p>';
+      const reminderButton = $('enableTaskReminders');
+      const reminderStatus = $('taskReminderStatus');
+      if (!('Notification' in window)) {
+        reminderButton.disabled = true;
+        reminderStatus.textContent = 'Notifications are not supported by this browser.';
+      } else if (Notification.permission === 'granted') {
+        reminderButton.textContent = 'Browser reminders enabled';
+        reminderStatus.textContent = 'Reminders can appear while this page is open.';
+      } else if (Notification.permission === 'denied') {
+        reminderButton.textContent = 'Notifications blocked';
+        reminderStatus.textContent = 'Allow notifications for this site in your browser settings.';
+      }
+      reminderButton.addEventListener('click', async () => {
+        if (!('Notification' in window)) return;
+        try {
+          const permission = await Notification.requestPermission();
+          reminderStatus.textContent = permission === 'granted' ? 'Browser reminders enabled.' : 'Permission was not granted.';
+          reminderButton.textContent = permission === 'granted' ? 'Browser reminders enabled' : 'Enable browser reminders';
+          if (permission === 'granted') checkTaskReminders();
+        } catch (_) { reminderStatus.textContent = 'Could not request notification permission in this browser.'; }
+      });
+      $('workspaceTaskForm').addEventListener('submit',e=>{e.preventDefault();const title=$('workspaceTask').value.trim();if(!title)return;const list=readArray(tasksKey);list.unshift({title,date:$('workspaceTaskDate').value,time:$('workspaceTaskTime').value,done:false,reminded:false});if(!writeArray(tasksKey,list.slice(0,100))){alert('Could not save task. Browser storage may be full.');return}renderPanel();});
       body.querySelectorAll('[data-task-done]').forEach(b=>b.addEventListener('click',()=>{const list=readArray(tasksKey),i=Number(b.dataset.taskDone);if(list[i])list[i].done=!list[i].done;writeArray(tasksKey,list);renderPanel()}));
       body.querySelectorAll('[data-task-delete]').forEach(b=>b.addEventListener('click',()=>{const list=readArray(tasksKey);list.splice(Number(b.dataset.taskDelete),1);writeArray(tasksKey,list);renderPanel()}));
     } else if(activePanel==='library') {
