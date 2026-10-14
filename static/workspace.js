@@ -54,9 +54,59 @@
     $('workspaceTitle').textContent=info[0];$('workspaceDescription').textContent=info[1];
     if(activePanel==='codex') {
       body.innerHTML=`
-        <div class="workspace-card"><h3>OpenAI Codex</h3><p>Codex is a coding agent for working on code. RYDON's Codex link opens the official Codex page; it does not mean Codex is already integrated into this app.</p><a class="workspace-action primary" href="https://openai.com/codex/" target="_blank" rel="noopener noreferrer">Open official Codex ↗</a></div>
-        <div class="workspace-card"><h3>RYDON AI source code</h3><p>Open the repository to inspect code, issues and pull requests.</p><a class="workspace-action" href="https://github.com/RYDON757/rydon-ai-2." target="_blank" rel="noopener noreferrer">Open GitHub repository ↗</a></div>
-        <div class="workspace-card"><h3>What is not connected yet?</h3><p>There is no in-app Codex execution session in this workspace panel. Repository access and a secure coding-agent integration would need separate setup.</p></div>`;
+        <div class="workspace-card"><h3>RYDON Code Assistant</h3><p>Ask for code, debugging, explanations, refactors, or tests without leaving RYDON. It uses your configured RYDON AI provider; it does not run code or modify your GitHub repository automatically.</p>
+          <form id="workspaceCodeForm"><label for="workspaceCodeTask">What should we build or fix?</label><textarea class="workspace-textarea" id="workspaceCodeTask" maxlength="4000" required placeholder="e.g. Write a Python function to validate email addresses and include tests"></textarea><label for="workspaceCodeContext">Optional code or error message</label><textarea class="workspace-textarea" id="workspaceCodeContext" maxlength="8000" placeholder="Paste code, logs, or an error here"></textarea><button class="workspace-action primary" id="workspaceCodeSend" type="submit">Run coding assistant</button></form>
+          <div id="workspaceCodeStatus" role="status" aria-live="polite" style="margin-top:10px;color:#aaa;font-size:.84rem"></div>
+          <div id="workspaceCodeResult" class="workspace-card workspace-note" hidden></div>
+          <button class="workspace-action" id="workspaceCodeCopy" type="button" hidden>Copy response</button>
+        </div>
+        <div class="workspace-card"><h3>Repository workflow</h3><p>Use this assistant to prepare patches, tests, and review instructions. Actual repository edits, CI checks, and deployments must still be made through authorized GitHub/hosting workflows.</p><a class="workspace-action" href="https://github.com/RYDON757/rydon-ai-2." target="_blank" rel="noopener noreferrer">View RYDON repository ↗</a></div>`;
+      let codeAnswer = '';
+      $('workspaceCodeForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const task = $('workspaceCodeTask').value.trim();
+        const context = $('workspaceCodeContext').value.trim();
+        if (!task) return;
+        const button = $('workspaceCodeSend');
+        const status = $('workspaceCodeStatus');
+        const result = $('workspaceCodeResult');
+        const copy = $('workspaceCodeCopy');
+        button.disabled = true;
+        status.textContent = 'RYDON is working on your code…';
+        result.hidden = true;
+        copy.hidden = true;
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              mode: 'code',
+              message: context ? task + '\\n\\nRelevant code or error:\\n' + context : task,
+              history: [],
+              web_search: false
+            })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.reply || data.error || 'Coding request failed.');
+          codeAnswer = String(data.reply || 'No response received.');
+          result.textContent = codeAnswer;
+          result.hidden = false;
+          copy.hidden = false;
+          status.textContent = 'Response ready · ' + (data.source || 'RYDON AI');
+        } catch (error) {
+          status.textContent = error.message || 'Could not complete the coding request.';
+        } finally {
+          button.disabled = false;
+        }
+      });
+      $('workspaceCodeCopy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(codeAnswer);
+          $('workspaceCodeCopy').textContent = 'Copied';
+        } catch (_) {
+          $('workspaceCodeStatus').textContent = 'Copy is unavailable here; select the response text manually.';
+        }
+      });
     } else if(activePanel==='schedule') {
       const tasks=readArray(tasksKey);
       body.innerHTML=`<h3>Add a task</h3><form id="workspaceTaskForm"><label for="workspaceTask">Task</label><input class="workspace-input" id="workspaceTask" maxlength="180" required placeholder="e.g. Test Android installation"><label for="workspaceTaskDate">Date (optional)</label><input class="workspace-input" id="workspaceTaskDate" type="date"><button class="workspace-action primary" type="submit">＋ Add task</button></form><div style="height:12px"></div><h3>Your tasks (${tasks.length})</h3>`+
