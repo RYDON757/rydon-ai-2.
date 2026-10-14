@@ -1,0 +1,148 @@
+/* RYDON AI 2.0 — ChatGPT-inspired window refresh.
+   Presentation-only overrides: preserve existing app behavior and controls. */
+:root {
+  --bg: #212121;
+  --sidebar: #171717;
+  --panel: #2f2f2f;
+  --panel2: #262626;
+  --line: #3c3c3c;
+  --text: #f5f5f5;
+  --muted: #a1a1aa;
+  --accent: #10a37f;
+}
+html { color-scheme: dark; }
+body { background: var(--bg); }
+.app { isolation: isolate; }
+.sidebar {
+  width: 272px;
+  flex-basis: 272px;
+  padding: 13px 11px 10px;
+  gap: 8px;
+  border-right: 1px solid rgba(255,255,255,.055);
+  box-shadow: 8px 0 30px rgba(0,0,0,.06);
+}
+.brand-row { padding: 5px 4px 11px; }
+.brand { letter-spacing: -.035em; }
+.brand-mark, .welcome-mark {
+  background: linear-gradient(145deg,#10a37f 5%,#0d8e78 48%,#4d9bff 115%);
+}
+.side-btn, .chat-item, .icon-btn {
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.side-btn { min-height: 40px; border-radius: 10px; }
+.side-btn.primary {
+  border-color: #3b3b3b;
+  background: #202020;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+#searchChats {
+  border-color: #343434;
+  background: #202020;
+  min-height: 39px;
+}
+#searchChats:focus-visible, #message:focus-visible,
+button:focus-visible, a:focus-visible, input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #10a37f;
+  outline-offset: 2px;
+}
+#chatList { scrollbar-width: thin; scrollbar-color: #484848 transparent; }
+.chat-item { min-height: 38px; border-radius: 9px; }
+.sidebar-bottom { padding-top: 11px; }
+.profile { border-radius: 12px; min-width: 0; }
+.profile > div:last-child { min-width: 0; overflow-wrap: anywhere; }
+.main { background: var(--bg); }
+.topbar {
+  position: relative;
+  z-index: 2;
+  height: 60px;
+  flex-basis: 60px;
+  padding: 0 23px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+  background: rgba(33,33,33,.94);
+}
+.top-title { letter-spacing: -.025em; }
+.top-sub { color: #a1a1aa; }
+.status-pill { white-space: nowrap; }
+#chat {
+  scrollbar-width: thin;
+  scrollbar-color: #454545 transparent;
+  padding-top: 28px;
+}
+.welcome {
+  max-width: 790px;
+  margin-top: clamp(42px, 10vh, 100px);
+}
+.welcome-mark { box-shadow: 0 8px 36px rgba(16,163,127,.16); }
+.welcome h1 { letter-spacing: -.045em; }
+.welcome p { line-height: 1.6; }
+.suggestion {
+  min-height: 84px;
+  border-color: #3a3a3a;
+  background: #262626;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.suggestion:hover { background: #2b2b2b; border-color: #555; transform: translateY(-1px); }
+.messages { max-width: 800px; }
+.msg-row { gap: 13px; margin-bottom: 28px; }
+.msg-content { line-height: 1.75; }
+.msg-avatar.ai-avatar { background: linear-gradient(145deg,#10a37f,#087f69); }
+.composer-area {
+  padding: 12px 20px calc(11px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg,rgba(33,33,33,0),#212121 24%);
+}
+.composer-shell {
+  max-width: 850px;
+  border-color: #454545;
+  border-radius: 26px;
+  background: #2f2f2f;
+  box-shadow: 0 10px 35px rgba(0,0,0,.12);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.composer-shell:focus-within {
+  border-color: #626262;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.025), 0 10px 35px rgba(0,0,0,.16);
+}
+#message { resize: none; min-height: 42px; }
+.send-btn {
+  background: #f5f5f5;
+  transition: transform .12s ease, background .12s ease;
+}
+.send-btn:hover:not(:disabled) { background: #fff; transform: translateY(-1px); }
+.tool-btn, .file-label { min-height: 32px; }
+.tool-btn.active { box-shadow: inset 0 0 0 1px rgba(16,163,127,.12); }
+.statusline { max-width: 850px; }
+.legal { padding-top: 1px; }
+.modal-backdrop { backdrop-filter: blur(7px); }
+.account-modal { border-color: #414141; }
+@media (min-width: 761px) {
+  .sidebar.collapsed { width: 0; flex-basis: 0; }
+}
+@media (max-width: 760px) {
+  .sidebar {
+    width: min(86vw, 300px);
+    flex-basis: auto;
+    padding: 13px 11px 10px;
+    transition: transform .22s ease;
+  }
+  .topbar { height: 56px; flex-basis: 56px; padding: 0 12px; }
+  .top-actions { gap: 5px; }
+  #chat { padding: 16px 13px 12px; }
+  .welcome { margin-top: clamp(24px, 6vh, 56px); }
+  .welcome-mark { width: 52px; height: 52px; border-radius: 17px; }
+  .suggestion { min-height: 0; }
+  .composer-shell { border-radius: 23px; }
+  .composer-tools { gap: 6px; }
+  .tool-btn, .file-label { font-size: .75rem; }
+}
+@media (max-width: 390px) {
+  .top-sub { display: none; }
+  .topbar { gap: 5px; }
+  .top-title { font-size: .91rem; }
+  .top-actions .account-btn { max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+  .composer-tools { gap: 5px; }
+  .tool-btn, .file-label { padding: 5px 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
