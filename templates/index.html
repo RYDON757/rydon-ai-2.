@@ -381,7 +381,10 @@
     status.textContent = imageMode === 'generate' ? 'Image creation mode · describe what you want' : imageMode === 'edit' ? 'Photo editing mode · choose a photo' : 'Ready';
     if (!imageMode && !selectedImageFile) input.placeholder = 'Message RYDON AI...';
   }
-  createImageButton.addEventListener('click',()=>setImageMode('generate'));
+  createImageButton.addEventListener('click',()=>{
+    documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
+    setImageMode('generate');
+  });
   createDocumentButton.addEventListener('click',()=>{
     documentMode=!documentMode;
     if(documentMode){
@@ -398,6 +401,7 @@
   });
 
   editImageButton.addEventListener('click',()=>{
+    documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
     imageMode='edit';
     createImageButton.classList.remove('mode-active');
     createImageButton.setAttribute('aria-pressed','false');
