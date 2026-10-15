@@ -114,6 +114,9 @@
   function closePanel(){backdrop.hidden=true;activePanel='';}
   function renderPanel() {
     const titles = {
+      images:['Images','Open Creative Studio to create or edit images. Image generation depends on the configured provider and its available quota.'],
+      projects:['Projects','Organize project work using RYDON chat history and coding assistance. Project data is currently saved in this browser, not synced across devices.'],
+      remote:['Remote','Remote development is not a hosted desktop session yet. Open the RYDON repository to inspect code and issues.'],
       codex:['Codex','Explore coding assistance for building, reviewing and fixing software.'],
       schedule:['Schedule','Keep a simple list of tasks and planned work in this browser. This does not run background automations or send notifications.'],
       library:['Library','Save short notes and reference text locally in this browser. This is not cloud-synced document storage.'],
@@ -123,7 +126,14 @@
     };
     const info=titles[activePanel]||titles.library;
     $('workspaceTitle').textContent=info[0];$('workspaceDescription').textContent=info[1];
-    if(activePanel==='codex') {
+    if(activePanel==='images') {
+      body.innerHTML=`<div class="workspace-card"><h3>Creative Studio</h3><p>Use image creation, photo editing and document tools from the studio. Image creation may be unavailable when the provider quota is exhausted.</p><a class="workspace-action primary" href="/studio">Open Creative Studio ↗</a></div>`;
+    } else if(activePanel==='projects') {
+      body.innerHTML=`<div class="workspace-card"><h3>Projects</h3><p>Start a new chat for a project, use descriptive conversation titles, and use Codex for code-related work. Conversations are currently stored in this browser.</p><button class="workspace-action primary" id="workspaceProjectNew" type="button">Start project chat</button></div><div class="workspace-card"><h3>Project development</h3><p>For code changes and deployment, use the repository and hosting dashboard.</p><a class="workspace-action" href="https://github.com/RYDON757/rydon-ai-2." target="_blank" rel="noopener noreferrer">Open GitHub ↗</a></div>`;
+      $('workspaceProjectNew').addEventListener('click',()=>{closePanel();$('newChat').click();});
+    } else if(activePanel==='remote') {
+      body.innerHTML=`<div class="workspace-card"><h3>Remote development</h3><p>A live remote desktop or code execution environment is not currently connected to this app. You can inspect the repository here.</p><a class="workspace-action primary" href="https://github.com/RYDON757/rydon-ai-2." target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>`;
+    } else if(activePanel==='codex') {
       body.innerHTML=`
         <div class="workspace-card"><h3>RYDON Code Assistant</h3><p>Ask for code, debugging, explanations, refactors, or tests without leaving RYDON. It uses your configured RYDON AI provider; it does not run code or modify your GitHub repository automatically.</p>
           <form id="workspaceCodeForm"><label for="workspaceCodeTask">What should we build or fix?</label><textarea class="workspace-textarea" id="workspaceCodeTask" maxlength="4000" required placeholder="e.g. Write a Python function to validate email addresses and include tests"></textarea><label for="workspaceCodeContext">Optional code or error message</label><textarea class="workspace-textarea" id="workspaceCodeContext" maxlength="8000" placeholder="Paste code, logs, or an error here"></textarea><button class="workspace-action primary" id="workspaceCodeSend" type="submit">Run coding assistant</button></form>
