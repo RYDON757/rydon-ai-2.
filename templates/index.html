@@ -221,6 +221,7 @@
       </div>
       <form class="account-form" id="accountForm">
         <div id="registerNameWrap" hidden><label for="accountName">Full name</label><input class="account-field" id="accountName" name="name" autocomplete="name" maxlength="80" placeholder="Your name"></div>
+        <div id="registerMobileWrap" hidden><label for="accountMobile">Mobile number <span style="color:#aaa;font-weight:400">(optional)</span></label><input class="account-field" id="accountMobile" name="mobile_number" type="tel" autocomplete="tel" inputmode="tel" maxlength="32" placeholder="e.g. +254 712 345678"></div>
         <label for="accountEmail">Email address</label><input class="account-field" id="accountEmail" name="email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com">
         <label for="accountPassword">Password</label><input class="account-field" id="accountPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="256" required placeholder="At least 10 characters">
         <button class="account-primary" id="accountSubmit" type="submit">Log in</button>
@@ -617,6 +618,7 @@
     document.getElementById('showLogin').classList.toggle('active', !registering);
     document.getElementById('showRegister').classList.toggle('active', registering);
     document.getElementById('registerNameWrap').hidden = !registering;
+    document.getElementById('registerMobileWrap').hidden = !registering;
     document.getElementById('accountName').required = registering;
     document.getElementById('accountPassword').autocomplete = registering ? 'new-password' : 'current-password';
     document.getElementById('accountPassword').placeholder = registering ? 'Create a password (10+ characters)' : 'Your password';
@@ -668,7 +670,10 @@
     const submit=document.getElementById('accountSubmit');
     submit.disabled=true;showAccountMessage(authMode==='register'?'Creating your account…':'Logging in…');
     const body={email:document.getElementById('accountEmail').value.trim(),password:document.getElementById('accountPassword').value};
-    if(authMode==='register')body.name=document.getElementById('accountName').value.trim();
+    if(authMode==='register'){
+      body.name=document.getElementById('accountName').value.trim();
+      body.mobile_number=document.getElementById('accountMobile').value.trim();
+    }
     try{
       const response=await fetch(authMode==='register'?'/api/auth/register':'/api/auth/login',{
         method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)

@@ -90,11 +90,13 @@ def test_account_register_login_and_duplicate_email():
     registered = c.post("/api/auth/register", json={
         "name": "Test User",
         "email": email,
+        "mobile_number": "+254 712-345678",
         "password": "a-strong-test-password",
     })
     assert registered.status_code == 201
     assert registered.get_json()["account"]["plan"] == "free"
     assert registered.get_json()["account"]["email"] == email
+    assert registered.get_json()["account"]["mobile_number"] == "+254712345678"
 
     duplicate = c.post("/api/auth/register", json={
         "name": "Test User",
