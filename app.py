@@ -1165,7 +1165,8 @@ def request_password_reset():
             app.logger.exception("Password reset email could not be sent.")
             with auth_db() as connection:
                 connection.execute("DELETE FROM rydon_password_resets WHERE token_hash = ?", (token_hash,))
-            return jsonify({"error": "Password reset email is not configured or could not be sent. Please contact support."}), 503
+            # Keep the public response identical for known and unknown accounts.
+            # SMTP failures are recorded in server logs; never expose account existence.
     return jsonify({"ok": True, "message": "If an account exists for that email, a reset link will be sent."})
 
 
