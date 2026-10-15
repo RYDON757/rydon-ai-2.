@@ -514,10 +514,12 @@
     if(chat.querySelector('.welcome'))chat.innerHTML='';
     addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
     input.value='';autoSize();send.disabled=true;
-    status.textContent=imageMode==='generate'?'Creating image…':imageMode==='edit'?'Editing photo…':'Thinking…';
+    const runImageMode=imageMode || (/\b(create|generate|draw|make)\b.{0,35}\b(image|picture|illustration|artwork|logo)\b/i.test(message)?'generate':'');
+    const runDocumentMode=documentMode || (!imageMode && /\b(create|make|write|draft|prepare|generate)\b.{0,35}\b(document|report|essay|letter|proposal|resume|résumé|cv)\b/i.test(message));
+    status.textContent=runImageMode==='generate'?'Creating image…':runImageMode==='edit'?'Editing photo…':runDocumentMode?'Creating document…':'Thinking…';
     badge.textContent='● Working';
     try{
-      if(documentMode){
+      if(runDocumentMode){
         const response=await fetch('/api/studio/document',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'professional document',prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Document creation failed.');
         const content=String(data.content||'');if(!content.trim())throw new Error('The AI provider returned an empty document.');
@@ -525,13 +527,14 @@
         history.push({role:'assistant',content:content});
         documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
         input.placeholder='Message RYDON AI...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
-      }else if(imageMode==='generate'){
+      }else if(runImageMode==='generate'){
         const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
         const src=data.url||(data.b64_json?'data:image/png;base64,'+data.b64_json:'');
         if(!src)throw new Error('The provider returned no image.');
         addMessage('Here is your generated image.','ai');appendImageResult(src,'rydon-generated-image.png');
         history.push({role:'assistant',content:'Here is your generated image. [Image shown in this chat]'});
+        imageMode='';createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');input.placeholder='Message RYDON AI...';
         status.textContent='Image generated';badge.textContent='● Connected';
       }else if(imageMode==='edit'){
         if(!selectedImageFile)throw new Error('Choose a photo with Edit photo, then describe the changes.');
