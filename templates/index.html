@@ -66,10 +66,15 @@
     .suggestion:hover{background:#303030;border-color:#555}
     .suggestion strong{display:block;font-size:.9rem;margin-bottom:4px}.suggestion small{color:#aaa;font-size:.8rem}
     .messages{max-width:790px;margin:0 auto}
-    .msg-row{display:flex;gap:12px;margin:0 0 25px;align-items:flex-start}
+    .msg-row{display:flex;gap:12px;margin:0 0 25px;align-items:flex-start;width:100%}
     .msg-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;font-size:.83rem;font-weight:750}
     .msg-avatar.user-avatar{background:#555}.msg-avatar.ai-avatar{background:#10a37f;color:white}
     .msg-content{min-width:0;flex:1;padding-top:3px;line-height:1.72;font-size:.96rem;white-space:pre-wrap;overflow-wrap:anywhere}
+    .user-message-row{justify-content:flex-end}
+    .user-message-row .msg-avatar{display:none}
+    .user-message-row .msg-content{flex:0 1 auto;max-width:min(78%,640px);padding:10px 15px;border:1px solid #414141;border-radius:20px;background:#303030;line-height:1.55}
+    .assistant-message-row .msg-content{max-width:100%}
+    @media(max-width:600px){.user-message-row .msg-content{max-width:90%}}
     .msg-actions{display:flex;gap:5px;margin-top:8px}
     .msg-actions button{background:transparent;border:1px solid transparent;color:#999;padding:4px 7px;border-radius:7px;font-size:.76rem}
     .msg-actions button:hover{border-color:#454545;color:#eee}
@@ -319,6 +324,24 @@
     const mark=document.createElement('div');mark.className='welcome-mark';mark.textContent='R';
     const h=document.createElement('h1');h.textContent='What can I help with?';
     const p=document.createElement('p');p.textContent='Ask a question, explore an idea, or work on a document.';
+    // Proactive suggestions use only information already available in this browser.
+    const proactive=document.createElement('section');proactive.className='proactive-card';
+    proactive.style.cssText='margin:18px auto;padding:14px 16px;max-width:680px;border:1px solid var(--border,#444);border-radius:14px;text-align:left;background:var(--panel,#171717)';
+    let proactiveTitle='A useful next step',proactiveText='Want help planning your day? I can turn a goal into clear next actions.';
+    try{
+      const hour=new Date().getHours();
+      if(hour<12){proactiveTitle='Plan your morning';proactiveText='Pick one important task and let RYDON break it into manageable steps.'}
+      else if(hour<18){proactiveTitle='Check your progress';proactiveText='Review what remains today and decide what to finish next.'}
+      else{proactiveTitle='Wrap up your day';proactiveText='Summarize progress and prepare a short plan for tomorrow.'}
+      const tasks=JSON.parse(localStorage.getItem('rydon_workspace_tasks_v1')||'[]');
+      const pending=Array.isArray(tasks)?tasks.filter(t=>t&&!t.done):[];
+      if(pending.length){proactiveTitle='Your saved tasks';proactiveText='You have '+pending.length+' unfinished task'+(pending.length===1?'':'s')+' saved on this device. Ask me to prioritize them.'}
+    }catch(_){}
+    const proactiveHeading=document.createElement('strong');proactiveHeading.textContent=proactiveTitle;
+    const proactiveCopy=document.createElement('p');proactiveCopy.style.margin='6px 0 10px';proactiveCopy.textContent=proactiveText;
+    const proactiveAction=document.createElement('button');proactiveAction.type='button';proactiveAction.className='tool-btn';proactiveAction.textContent='Help me with this';
+    proactiveAction.addEventListener('click',()=>{input.value=proactiveTitle==='Your saved tasks'?'Help me prioritize my unfinished tasks and make a realistic plan.':'Help me '+proactiveTitle.toLowerCase()+' with a practical plan and next actions.';input.focus();autoSize()});
+    proactive.append(proactiveHeading,proactiveCopy,proactiveAction);
     const suggestions=document.createElement('div');suggestions.className='suggestions';
     [['Explain something','Break a topic down step by step.','Explain a difficult topic step by step with examples.'],['Help me write','Create or improve a message or document.','Help me write a clear, professional message.'],['Study with me','Learn with notes and worked examples.','Help me study a topic with summarized notes and worked examples.'],['Analyze a document','Upload a TXT or PDF and ask questions.','I want to analyze a document I will attach.']];
     const cards=[
@@ -328,15 +351,24 @@
       ['Analyze a document','Upload a TXT or PDF and ask questions.','I want to analyze a document I will attach.']
     ];
     cards.forEach(c=>{const b=document.createElement('button');b.className='suggestion';const strong=document.createElement('strong');strong.textContent=c[0];const small=document.createElement('small');small.textContent=c[1];b.append(strong,small);b.addEventListener('click',()=>{input.value=c[2];input.focus();autoSize()});suggestions.appendChild(b)});
-    wrap.append(mark,h,p,suggestions);chat.appendChild(wrap);
+    wrap.append(mark,h,p,proactive,suggestions);chat.appendChild(wrap);
   }
   function addMessage(text,who){
-    const row=document.createElement('div');row.className='msg-row';
+    const row=document.createElement('div');row.className='msg-row '+(who==='user'?'user-message-row':'assistant-message-row');
     const av=document.createElement('div');av.className='msg-avatar '+(who==='user'?'user-avatar':'ai-avatar');av.textContent=who==='user'?'I':'R';
     const body=document.createElement('div');body.className='msg-content';body.textContent=text;
     row.append(av,body);
     if(who==='ai'){
       const actions=document.createElement('div');actions.className='msg-actions';
+      const reminder=document.createElement('button');reminder.type='button';reminder.textContent='◷ Save as reminder';reminder.addEventListener('click',()=>{
+        const title=prompt('What should the reminder say?',text.slice(0,140));if(!title||!title.trim())return;
+        const date=prompt('Reminder date (YYYY-MM-DD)',new Date().toISOString().slice(0,10));if(!date)return;
+        const time=prompt('Reminder time (24-hour HH:MM)','18:00');if(!time)return;
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){status.textContent='Use date YYYY-MM-DD and time HH:MM.';return}
+        try{const key='rydon_workspace_tasks_v1',items=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(items))throw new Error('Invalid task storage');items.unshift({title:title.trim().slice(0,180),date,time,done:false,reminded:false});localStorage.setItem(key,JSON.stringify(items.slice(0,100)));status.textContent='Reminder saved on this device. Notifications require permission and this page to remain open.'}
+        catch(_){status.textContent='Could not save reminder in browser storage.'}
+      });
+      actions.appendChild(reminder);
       const copy=document.createElement('button');copy.type='button';copy.textContent='▢ Copy';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(text);copy.textContent='✓ Copied';setTimeout(()=>copy.textContent='▢ Copy',1200)}catch(_){status.textContent='Copy is unavailable in this browser.'}});
       const read=document.createElement('button');read.type='button';read.textContent='🔈 Read aloud';read.addEventListener('click',()=>{if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text))}});
       actions.append(copy,read);body.appendChild(actions);
@@ -461,9 +493,13 @@
   webSearch.addEventListener('click',()=>{webEnabled=!webEnabled;webSearch.classList.toggle('active',webEnabled);webSearch.setAttribute('aria-pressed',String(webEnabled));status.textContent=webEnabled?'Web search enabled':'Web search disabled'});
   document.getElementById('settings').addEventListener('click',()=>alert('RYDON AI tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
   document.getElementById('memory').addEventListener('click',()=>{
-    const current=savedMemory.length?savedMemory.map((item,i)=>(i+1)+'. '+item).join('\n'):'No saved memories yet.';
-    const action=prompt('Saved memory (stored only in this browser):\n\n'+current+'\n\nType CLEAR to delete all saved memories, or Cancel to keep them.');
-    if(action&&action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Saved memory cleared.'}
+    const current=savedMemory.join('\n');
+    const action=prompt('Edit your local RYDON memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
+    if(action===null)return;
+    if(action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Local memory erased.';return}
+    savedMemory=action.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.slice(0,500)).slice(-30);
+    try{localStorage.setItem(MEMORY_KEY,JSON.stringify(savedMemory));status.textContent='Local memory updated on this device.'}
+    catch(_){status.textContent='Could not save local memory. Browser storage may be full.'}
   });
   fileInput.addEventListener('change',async()=>{
     const file=fileInput.files&&fileInput.files[0];if(!file)return;
@@ -478,10 +514,12 @@
     if(chat.querySelector('.welcome'))chat.innerHTML='';
     addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
     input.value='';autoSize();send.disabled=true;
-    status.textContent=imageMode==='generate'?'Creating image…':imageMode==='edit'?'Editing photo…':'Thinking…';
+    const runImageMode=imageMode || (/\b(create|generate|draw|make)\b.{0,35}\b(image|picture|illustration|artwork|logo)\b/i.test(message)?'generate':'');
+    const runDocumentMode=documentMode || (!imageMode && /\b(create|make|write|draft|prepare|generate)\b.{0,35}\b(document|report|essay|letter|proposal|resume|résumé|cv)\b/i.test(message));
+    status.textContent=runImageMode==='generate'?'Creating image…':runImageMode==='edit'?'Editing photo…':runDocumentMode?'Creating document…':'Thinking…';
     badge.textContent='● Working';
     try{
-      if(documentMode){
+      if(runDocumentMode){
         const response=await fetch('/api/studio/document',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'professional document',prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Document creation failed.');
         const content=String(data.content||'');if(!content.trim())throw new Error('The AI provider returned an empty document.');
@@ -489,13 +527,14 @@
         history.push({role:'assistant',content:content});
         documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
         input.placeholder='Message RYDON AI...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
-      }else if(imageMode==='generate'){
+      }else if(runImageMode==='generate'){
         const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
         const src=data.url||(data.b64_json?'data:image/png;base64,'+data.b64_json:'');
         if(!src)throw new Error('The provider returned no image.');
         addMessage('Here is your generated image.','ai');appendImageResult(src,'rydon-generated-image.png');
         history.push({role:'assistant',content:'Here is your generated image. [Image shown in this chat]'});
+        imageMode='';createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');input.placeholder='Message RYDON AI...';
         status.textContent='Image generated';badge.textContent='● Connected';
       }else if(imageMode==='edit'){
         if(!selectedImageFile)throw new Error('Choose a photo with Edit photo, then describe the changes.');
@@ -509,7 +548,7 @@
         selectedImageFile=null;imageFileInput.value='';fileStatus.textContent='No image attached';
         status.textContent='Photo edit complete';badge.textContent='● Connected';
       }else{
-        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\\n')})});
+        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled})});
         const data=await res.json();const reply=data.reply||'No response received.';
         if(!res.ok)throw new Error(reply);
         addMessage(reply,'ai');history.push({role:'assistant',content:reply});
