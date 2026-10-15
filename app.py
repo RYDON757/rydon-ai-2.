@@ -1140,7 +1140,7 @@ def send_password_reset_email(recipient, reset_url):
 def request_password_reset():
     body = request.get_json(silent=True) or {}
     email = str(body.get("email", "")).strip().lower()[:254]
-    if not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email):
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
         return jsonify({"error": "Enter the email address used for your account."}), 400
     with auth_db() as connection:
         row = connection.execute(
