@@ -9,7 +9,7 @@ def test_pwa_manifest_is_valid_and_points_to_existing_icons():
 
     assert response.status_code == 200
     manifest = response.get_json()
-    assert manifest["name"] == "RYDON AI 2.0"
+    assert manifest["name"] == "Chat IPA"
     assert manifest["start_url"] == "/"
     assert manifest["scope"] == "/"
     assert manifest["display"] == "standalone"
