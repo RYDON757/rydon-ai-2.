@@ -578,11 +578,53 @@ def sitemap_xml():
     <loc>https://rydon-ai-2.onrender.com/</loc>
   </url>
   <url>
+    <loc>https://rydon-ai-2.onrender.com/privacy</loc>
+  </url>
+  <url>
     <loc>https://rydon-ai-2.onrender.com/copyright</loc>
   </url>
 </urlset>
 """
     return Response(body, mimetype="application/xml")
+
+
+@app.get("/privacy")
+def privacy_policy():
+    """Plain-language privacy information for Chat IPA visitors and store review."""
+    return """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://rydon-ai-2.onrender.com/privacy">
+<title>Privacy Policy | Chat IPA</title>
+<style>
+body{font:16px/1.7 system-ui,-apple-system,Segoe UI,sans-serif;max-width:820px;margin:32px auto;padding:20px;background:#212121;color:#f5f5f5}
+h1,h2{line-height:1.25}a{color:#8ee7ca}small{color:#aaa}
+</style>
+</head>
+<body>
+<h1>Chat IPA Privacy Policy</h1>
+<p><small>Last updated: 15 October 2026</small></p>
+<p>This policy explains how the Chat IPA web app at <a href="/">rydon-ai-2.onrender.com</a> handles information. Chat IPA is operated by the project owner identified on the <a href="/copyright">copyright page</a>.</p>
+<h2>Information you provide</h2>
+<p>If you create an account, the app processes your email address, display name, and a password hash to support login. Passwords are not intended to be stored as plain text. The app may process messages, document text you upload, and prompts or images submitted to creative tools to provide the feature you request.</p>
+<h2>Where information is stored</h2>
+<p>Chat history and locally saved assistant memory are stored in your browser using local storage. A signed session cookie is used for session and profile functionality. Account records are stored in the app's configured database. The current deployment may use local SQLite storage that can be lost when the hosting service is replaced or redeployed; do not rely on the service as a permanent archive. Avoid entering highly sensitive information.</p>
+<h2>AI and other service providers</h2>
+<p>When a hosted AI, web-search, image-generation, or image-editing provider is configured, the relevant message, search query, prompt, document text, or image may be sent to that provider to fulfil your request. Those providers process data under their own terms and privacy policies. The app owner should review the providers and configuration in use before accepting public users. Do not submit confidential or sensitive material unless you have verified the applicable provider terms.</p>
+<h2>Cookies, security, and retention</h2>
+<p>The app uses a session cookie and browser local storage for the functions described above. You can clear local browser storage to remove locally stored chat history and memory. Server-side account information may remain until it is deleted through the configured data store or by the operator. The app uses security measures including password hashing and HTTPS hosting, but no internet service can promise absolute security.</p>
+<h2>Children</h2>
+<p>Chat IPA is not designed to solicit personal information from children. If you believe a child has provided personal information, contact the project owner through the project repository so the issue can be reviewed.</p>
+<h2>Your choices and contact</h2>
+<p>Do not include sensitive information in prompts. You can clear local browser storage, stop using the service, or request review of an account-data issue by opening the <a href="https://github.com/RYDON757/rydon-ai-2.">Chat IPA project repository</a>. A dedicated support email and formal account-deletion workflow should be added before app-store launch.</p>
+<h2>Policy updates</h2>
+<p>This policy may change as the app's features, hosting, and providers change. Check this page for the current version.</p>
+<p><a href="/">Back to Chat IPA</a></p>
+</body>
+</html>"""
 
 
 @app.get("/studio")
