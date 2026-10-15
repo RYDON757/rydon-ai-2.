@@ -618,8 +618,47 @@ def studio_image():
             return jsonify({"error": "The image provider response did not include an image."}), 502
         return jsonify({"ok": True, "url": item.get("url", ""), "b64_json": item.get("b64_json", "")})
     except urllib.error.HTTPError as error:
-        app.logger.warning("Image provider HTTP %s", error.code)
-        return jsonify({"error": "Image provider returned HTTP " + str(error.code) + ". Check its key, model, quota and API compatibility."}), 502
+        raw_details = error.read().decode("utf-8", errors="replace")[:2000]
+        provider_code = ""
+        provider_message = ""
+        try:
+            parsed = json.loads(raw_details)
+            provider_error = parsed.get("error", {}) if isinstance(parsed, dict) else {}
+            if isinstance(provider_error, dict):
+                provider_code = str(provider_error.get("code") or provider_error.get("type") or "")[:100]
+                provider_message = str(provider_error.get("message") or "")[:500]
+            elif isinstance(provider_error, str):
+                provider_message = provider_error[:500]
+        except (ValueError, TypeError):
+            provider_message = ""
+        app.logger.warning(
+            "Image provider HTTP %s; provider_code=%s; provider_message=%s",
+            error.code, provider_code or "not_supplied", provider_message or "not_supplied"
+        )
+        detail = (" Provider detail: " + provider_message) if provider_message else ""
+        if error.code == 429:
+            lower_code = provider_code.lower()
+            lower_message = provider_message.lower()
+            if any(term in lower_code + " " + lower_message for term in (
+                "insufficient_quota", "credit_balance_exhausted", "spend_limit",
+                "usage_limit", "quota"
+            )):
+                message = (
+                    "The image API account has run out of credits or reached a usage/spending limit. "
+                    "Check the API provider's billing, credits, and project/organization limits. "
+                    "This is separate from a ChatGPT subscription."
+                )
+            else:
+                message = (
+                    "The image provider rate-limited this request. Wait before retrying; if it keeps "
+                    "happening, check the provider's image-generation limits and API usage."
+                )
+            return jsonify({"error": message + detail, "provider_code": provider_code or None}), 502
+        return jsonify({
+            "error": "Image provider returned HTTP " + str(error.code) +
+                     ". Check API key validity, model access, and provider compatibility." + detail,
+            "provider_code": provider_code or None
+        }), 502
     except Exception:
         app.logger.exception("Studio image generation failed")
         return jsonify({"error": "Could not reach the image provider. Check its API URL."}), 502
