@@ -173,7 +173,7 @@ def test_studio_document_uses_configured_ai(monkeypatch):
     rydon_app.API_KEY = "test-key"
     monkeypatch.setattr(
         rydon_app, "ask_hosted_model",
-        lambda message, history, memory: "# Test document\n\nCreated."
+        lambda message, history, memory, **kwargs: "# Test document\n\nCreated."
     )
     response = client().post(
         "/api/studio/document",
