@@ -16,6 +16,9 @@ import re
 import hmac
 import hashlib
 import time
+import secrets
+import smtplib
+from email.message import EmailMessage
 from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -979,6 +982,16 @@ def init_auth_db():
             connection.execute(
                 "ALTER TABLE rydon_users ADD COLUMN selected_plan TEXT NOT NULL DEFAULT 'free'"
             )
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS rydon_password_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES rydon_users(id) ON DELETE CASCADE
+            )
+        """)
 
 
 init_auth_db()
@@ -1081,6 +1094,117 @@ def auth_login():
     session["account_id"] = row["id"]
     session["user_name"] = row["display_name"]
     return jsonify({"ok": True, "account": public_account(row)})
+
+
+@app.get("/reset-password")
+def reset_password_page():
+    return render_template("reset_password.html")
+
+
+def send_password_reset_email(recipient, reset_url):
+    """Send a short-lived reset link using owner-configured SMTP credentials."""
+    host = os.environ.get("SMTP_HOST", "").strip()
+    username = os.environ.get("SMTP_USER", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "")
+    sender = os.environ.get("SMTP_FROM", "").strip() or username
+    try:
+        port = int(os.environ.get("SMTP_PORT", "587"))
+    except ValueError:
+        raise RuntimeError("SMTP_PORT must be a number.")
+    if not host or not sender or not username or not password:
+        raise RuntimeError("Password reset email is not configured.")
+    message = EmailMessage()
+    message["Subject"] = "Reset your Chat IPA password"
+    message["From"] = sender
+    message["To"] = recipient
+    message.set_content(
+        "We received a request to reset your Chat IPA password.\n\n"
+        "Use this one-time link within 30 minutes:\n" + reset_url +
+        "\n\nIf you did not request this, you can ignore this email."
+    )
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, timeout=15) as server:
+            server.login(username, password)
+            server.send_message(message)
+    else:
+        with smtplib.SMTP(host, port, timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(username, password)
+            server.send_message(message)
+
+
+@app.post("/api/auth/password-reset/request")
+@limiter.limit("3 per hour")
+def request_password_reset():
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()[:254]
+    if not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email):
+        return jsonify({"error": "Enter the email address used for your account."}), 400
+    with auth_db() as connection:
+        row = connection.execute(
+            "SELECT id, email FROM rydon_users WHERE email = ?", (email,)
+        ).fetchone()
+    # Avoid revealing whether an account exists. Never return a reset token to the browser.
+    if row:
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        expires = (now + datetime.timedelta(minutes=30)).isoformat()
+        with auth_db() as connection:
+            connection.execute("DELETE FROM rydon_password_resets WHERE user_id = ?", (row["id"],))
+            connection.execute(
+                "INSERT INTO rydon_password_resets (user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?)",
+                (row["id"], token_hash, expires, now.isoformat()),
+            )
+        reset_url = request.url_root.rstrip("/") + "/reset-password?token=" + urllib.parse.quote(token)
+        try:
+            send_password_reset_email(row["email"], reset_url)
+        except Exception:
+            app.logger.exception("Password reset email could not be sent.")
+            with auth_db() as connection:
+                connection.execute("DELETE FROM rydon_password_resets WHERE token_hash = ?", (token_hash,))
+            return jsonify({"error": "Password reset email is not configured or could not be sent. Please contact support."}), 503
+    return jsonify({"ok": True, "message": "If an account exists for that email, a reset link will be sent."})
+
+
+@app.post("/api/auth/password-reset/confirm")
+@limiter.limit("5 per hour")
+def confirm_password_reset():
+    body = request.get_json(silent=True) or {}
+    token = str(body.get("token", "")).strip()
+    password = str(body.get("password", ""))
+    if len(password) < 10 or len(password) > 256:
+        return jsonify({"error": "Use a new password between 10 and 256 characters."}), 400
+    if len(token) < 30 or len(token) > 200:
+        return jsonify({"error": "This reset link is invalid or expired. Request a new one."}), 400
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    with auth_db() as connection:
+        reset = connection.execute(
+            "SELECT id, user_id, expires_at FROM rydon_password_resets WHERE token_hash = ?",
+            (token_hash,),
+        ).fetchone()
+        if not reset:
+            return jsonify({"error": "This reset link is invalid or expired. Request a new one."}), 400
+        try:
+            expires_at = datetime.datetime.fromisoformat(reset["expires_at"])
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+        except (TypeError, ValueError):
+            expires_at = now - datetime.timedelta(seconds=1)
+        if expires_at <= now:
+            connection.execute("DELETE FROM rydon_password_resets WHERE user_id = ?", (reset["user_id"],))
+            return jsonify({"error": "This reset link is invalid or expired. Request a new one."}), 400
+        connection.execute(
+            "UPDATE rydon_users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(password), reset["user_id"]),
+        )
+        # One-time use: invalidate every outstanding reset link for this account.
+        connection.execute("DELETE FROM rydon_password_resets WHERE user_id = ?", (reset["user_id"],))
+    session.clear()
+    return jsonify({"ok": True, "message": "Password updated. Please log in with your new password."})
 
 
 @app.post("/api/auth/logout")
