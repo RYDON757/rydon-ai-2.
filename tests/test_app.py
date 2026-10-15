@@ -191,6 +191,31 @@ def test_password_reset_changes_password_without_deleting_account(monkeypatch):
     assert reused.status_code == 400
 
 
+def test_password_reset_smtp_failure_does_not_reveal_account(monkeypatch):
+    import uuid
+
+    c = client()
+    email = "smtp-failure-" + uuid.uuid4().hex + "@example.com"
+    registered = c.post("/api/auth/register", json={
+        "name": "SMTP Failure Test",
+        "email": email,
+        "password": "a-strong-test-password",
+    })
+    assert registered.status_code == 201
+
+    def fail_sending(recipient, reset_url):
+        raise RuntimeError("SMTP unavailable")
+
+    monkeypatch.setattr(rydon_app, "send_password_reset_email", fail_sending)
+    response = c.post("/api/auth/password-reset/request", json={"email": email})
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "ok": True,
+        "message": "If an account exists for that email, a reset link will be sent.",
+    }
+    assert "token" not in response.get_data(as_text=True)
+
+
 def test_password_reset_rejects_invalid_token():
     response = client().post("/api/auth/password-reset/confirm", json={
         "token": "invalid-reset-token-that-is-long-enough-to-check",
