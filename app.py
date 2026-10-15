@@ -599,7 +599,7 @@ def studio_image():
     key = os.environ.get("RYDON_IMAGE_API_KEY", "").strip()
     model = os.environ.get("RYDON_IMAGE_MODEL", "gpt-image-1").strip()
     if not key:
-        return jsonify({"error": "Image generation is not connected yet. Add RYDON_IMAGE_API_KEY in Render Environment Variables. The default endpoint/model use the OpenAI Images API (gpt-image-1); API billing and model access are required."}), 503
+        return jsonify({"error": "Image generation needs a compatible provider and is not connected yet. Add RYDON_IMAGE_API_KEY in Render Environment Variables. The default endpoint/model use the OpenAI Images API (gpt-image-1); API billing and model access are required."}), 503
     payload = {"model": model, "prompt": prompt, "n": 1, "size": "1024x1024"}
     req = urllib.request.Request(
         base + "/images/generations",
