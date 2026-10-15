@@ -306,7 +306,7 @@ def search_web(query):
         app.logger.exception("Web search request failed")
         return ""
 
-def ask_hosted_model(message, history, memory, document_context="", web_context="", saved_memory="", mode="chat"):
+def ask_hosted_model(message, history, memory, document_context="", web_context="", saved_memory="", mode="chat", max_completion_tokens=None):
     if not API_KEY:
         app.logger.error("Hosted AI unavailable: API key is missing.")
         return (
@@ -403,6 +403,10 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
         "messages": messages,
         "temperature": 0.2 if web_context else 0.7
     }
+    # Bound document output so the request fits more reliably within provider
+    # tokens-per-minute limits. Leave ordinary chat behavior unchanged.
+    if isinstance(max_completion_tokens, int) and max_completion_tokens > 0:
+        payload["max_completion_tokens"] = min(max_completion_tokens, 1600)
 
     req = urllib.request.Request(
         API_BASE + "/chat/completions",
@@ -443,13 +447,42 @@ def ask_hosted_model(message, history, memory, document_context="", web_context=
         return "The AI provider returned an empty response. Please try again."
 
     except urllib.error.HTTPError as error:
-        details = error.read().decode("utf-8", errors="replace")[:1000]
+        details = error.read().decode("utf-8", errors="replace")[:1500]
+        provider_code = ""
+        provider_message = ""
+        try:
+            parsed = json.loads(details)
+            provider_error = parsed.get("error", {}) if isinstance(parsed, dict) else {}
+            if isinstance(provider_error, dict):
+                provider_code = str(provider_error.get("code") or provider_error.get("type") or "")[:100]
+                provider_message = str(provider_error.get("message") or "")[:500]
+        except (ValueError, TypeError):
+            pass
         app.logger.error(
-            "AI provider HTTP %s: %s", error.code, details
+            "AI provider HTTP %s; provider_code=%s; provider_message=%s",
+            error.code, provider_code or "not_supplied",
+            provider_message or "not_supplied"
         )
+        if error.code == 429:
+            lowered = (provider_code + " " + provider_message).lower()
+            if any(term in lowered for term in (
+                "insufficient_quota", "credit_balance_exhausted",
+                "spend_limit", "usage_limit", "quota"
+            )):
+                return (
+                    "AI provider quota or billing limit reached. Check the provider account's "
+                    "credits, billing, and spending limits; retrying will not restore quota."
+                    + ((" Provider detail: " + provider_message) if provider_message else "")
+                )
+            return (
+                "AI provider rate limit reached. Wait before retrying; RYDON has reduced "
+                "document output size to lower token usage."
+                + ((" Provider detail: " + provider_message) if provider_message else "")
+            )
         return (
             f"AI provider returned HTTP {error.code}. "
-            "Check your API key, model access, and hosting service logs."
+            "Check the configured key, model access, and provider logs."
+            + ((" Provider detail: " + provider_message) if provider_message else "")
         )
 
     except Exception:
@@ -573,7 +606,7 @@ def studio_document():
             "clear structure, and the requested tone. Return the complete artifact. "
             "Do not invent personal facts or official approvals. Brief: " + prompt
         )
-        result = ask_hosted_model(instruction, [], get_memory())
+        result = ask_hosted_model(instruction, [], get_memory(), max_completion_tokens=1200)
         if not result or result.startswith("Configuration error:"):
             return jsonify({"error": result or "The AI provider returned no content."}), 503
         if result.startswith("AI provider returned HTTP ") or result.startswith("RYDON AI couldn't connect"):
@@ -618,8 +651,47 @@ def studio_image():
             return jsonify({"error": "The image provider response did not include an image."}), 502
         return jsonify({"ok": True, "url": item.get("url", ""), "b64_json": item.get("b64_json", "")})
     except urllib.error.HTTPError as error:
-        app.logger.warning("Image provider HTTP %s", error.code)
-        return jsonify({"error": "Image provider returned HTTP " + str(error.code) + ". Check its key, model, quota and API compatibility."}), 502
+        raw_details = error.read().decode("utf-8", errors="replace")[:2000]
+        provider_code = ""
+        provider_message = ""
+        try:
+            parsed = json.loads(raw_details)
+            provider_error = parsed.get("error", {}) if isinstance(parsed, dict) else {}
+            if isinstance(provider_error, dict):
+                provider_code = str(provider_error.get("code") or provider_error.get("type") or "")[:100]
+                provider_message = str(provider_error.get("message") or "")[:500]
+            elif isinstance(provider_error, str):
+                provider_message = provider_error[:500]
+        except (ValueError, TypeError):
+            provider_message = ""
+        app.logger.warning(
+            "Image provider HTTP %s; provider_code=%s; provider_message=%s",
+            error.code, provider_code or "not_supplied", provider_message or "not_supplied"
+        )
+        detail = (" Provider detail: " + provider_message) if provider_message else ""
+        if error.code == 429:
+            lower_code = provider_code.lower()
+            lower_message = provider_message.lower()
+            if any(term in lower_code + " " + lower_message for term in (
+                "insufficient_quota", "credit_balance_exhausted", "spend_limit",
+                "usage_limit", "quota"
+            )):
+                message = (
+                    "The image API account has run out of credits or reached a usage/spending limit. "
+                    "Check the API provider's billing, credits, and project/organization limits. "
+                    "This is separate from a ChatGPT subscription."
+                )
+            else:
+                message = (
+                    "The image provider rate-limited this request. Wait before retrying; if it keeps "
+                    "happening, check the provider's image-generation limits and API usage."
+                )
+            return jsonify({"error": message + detail, "provider_code": provider_code or None}), 502
+        return jsonify({
+            "error": "Image provider returned HTTP " + str(error.code) +
+                     ". Check API key validity, model access, and provider compatibility." + detail,
+            "provider_code": provider_code or None
+        }), 502
     except Exception:
         app.logger.exception("Studio image generation failed")
         return jsonify({"error": "Could not reach the image provider. Check its API URL."}), 502
