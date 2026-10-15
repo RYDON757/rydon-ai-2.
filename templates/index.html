@@ -514,8 +514,16 @@
     if(chat.querySelector('.welcome'))chat.innerHTML='';
     addMessage(message,'user');history.push({role:'user',content:message});saveCurrent();
     input.value='';autoSize();send.disabled=true;
-    const runImageMode=imageMode || (/\b(create|generate|draw|make)\b.{0,35}\b(image|picture|illustration|artwork|logo)\b/i.test(message)?'generate':'');
-    const runDocumentMode=documentMode || (!imageMode && /\b(create|make|write|draft|prepare|generate)\b.{0,35}\b(document|report|essay|letter|proposal|resume|résumé|cv)\b/i.test(message));
+    // Route clear image-creation requests to the image API instead of ordinary chat,
+    // where the language model might only describe the picture in words.
+    const imageRequestText=message.trim();
+    const isImageHowTo=/\b(how\s+(do\s+i|can\s+i|to)|explain|teach\s+me|what\s+is)\b.{0,35}\b(create|generate|draw|make|image|picture|illustration|artwork|logo)\b/i.test(imageRequestText);
+    const hasImageSubject=/\b(image|picture|photo|illustration|artwork|logo|wallpaper|poster|portrait|drawing|visual)\b/i.test(imageRequestText);
+    const hasCreationIntent=/\b(create|generate|draw|make|design|render|produce|show|give)\b/i.test(imageRequestText)
+      || /\b(i want|i need|can you|could you|please)\b.{0,45}\b(image|picture|photo|illustration|artwork|logo|wallpaper|poster|portrait|drawing|visual)\b/i.test(imageRequestText)
+      || /\b(image|picture|photo|illustration|artwork|logo|wallpaper|poster|portrait|drawing)\s+of\b/i.test(imageRequestText);
+    const runImageMode=imageMode || (!isImageHowTo && hasImageSubject && hasCreationIntent ? 'generate' : '');
+    const runDocumentMode=documentMode || (!runImageMode && !imageMode && /\b(create|make|write|draft|prepare|generate)\b.{0,35}\b(document|report|essay|letter|proposal|resume|résumé|cv)\b/i.test(message));
     status.textContent=runImageMode==='generate'?'Creating image…':runImageMode==='edit'?'Editing photo…':runDocumentMode?'Creating document…':'Thinking…';
     badge.textContent='● Working';
     try{
