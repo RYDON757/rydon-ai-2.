@@ -32,4 +32,4 @@ def test_service_worker_is_served_and_excludes_api_requests_from_cache():
     assert "addEventListener('install'" in source
     assert "addEventListener('activate'" in source
     assert "url.pathname.startsWith('/api/')" in source
-    assert "rydon-ai-shell" in source
+    assert "chat-ipa-shell-v4" in source
