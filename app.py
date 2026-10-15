@@ -1052,7 +1052,7 @@ def auth_register():
     mobile_number = str(body.get("mobile_number", "")).strip()[:32]
     password = str(body.get("password", ""))
     if mobile_number:
-        phone_digits = re.sub(r"\\D", "", mobile_number)
+        phone_digits = re.sub(r"\D", "", mobile_number)
         if not re.fullmatch(r"[+0-9() .-]+", mobile_number) or not 7 <= len(phone_digits) <= 15:
             return jsonify({"error": "Enter a valid mobile number with country code, or leave it blank."}), 400
         mobile_number = "+" + phone_digits if mobile_number.startswith("+") else phone_digits
