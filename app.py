@@ -966,6 +966,7 @@ def init_auth_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 display_name TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                phone_number TEXT,
                 password_hash TEXT NOT NULL,
                 plan TEXT NOT NULL DEFAULT 'free',
                 selected_plan TEXT NOT NULL DEFAULT 'free',
@@ -982,6 +983,8 @@ def init_auth_db():
             connection.execute(
                 "ALTER TABLE rydon_users ADD COLUMN selected_plan TEXT NOT NULL DEFAULT 'free'"
             )
+        if "phone_number" not in columns:
+            connection.execute("ALTER TABLE rydon_users ADD COLUMN phone_number TEXT")
         connection.execute("""
             CREATE TABLE IF NOT EXISTS rydon_password_resets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1004,6 +1007,7 @@ def public_account(row):
         "id": row["id"],
         "name": row["display_name"],
         "email": row["email"],
+        "mobile_number": row["phone_number"],
         "plan": row["plan"],
         "selected_plan": row["selected_plan"],
         "subscription_status": row["subscription_status"],
@@ -1045,7 +1049,15 @@ def auth_register():
     body = request.get_json(silent=True) or {}
     name = str(body.get("name", "")).strip()[:80]
     email = str(body.get("email", "")).strip().lower()[:254]
+    mobile_number = str(body.get("mobile_number", "")).strip()[:32]
     password = str(body.get("password", ""))
+    if mobile_number:
+        phone_digits = re.sub(r"\\D", "", mobile_number)
+        if not re.fullmatch(r"[+0-9() .-]+", mobile_number) or not 7 <= len(phone_digits) <= 15:
+            return jsonify({"error": "Enter a valid mobile number with country code, or leave it blank."}), 400
+        mobile_number = "+" + phone_digits if mobile_number.startswith("+") else phone_digits
+    else:
+        mobile_number = None
     if len(name) < 2:
         return jsonify({"error": "Enter your name (at least 2 characters)."}), 400
     if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
@@ -1056,11 +1068,12 @@ def auth_register():
         with auth_db() as connection:
             cursor = connection.execute(
                 """INSERT INTO rydon_users
-                   (display_name, email, password_hash, created_at)
-                   VALUES (?, ?, ?, ?)""",
+                   (display_name, email, phone_number, password_hash, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
                 (
                     name,
                     email,
+                    mobile_number,
                     generate_password_hash(password),
                     datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 ),
