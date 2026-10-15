@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rydon-ai-shell-v3';
+const CACHE_NAME = 'chat-ipa-shell-v4';
 const APP_SHELL = ['/', '/static/manifest.webmanifest', '/static/rydon-icon.svg', '/static/rydon-icon-192.png', '/static/rydon-icon-512.png', '/static/apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
