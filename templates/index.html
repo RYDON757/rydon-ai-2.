@@ -147,7 +147,7 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand-row">
-      <div class="brand"><span class="brand-mark">R</span><span>Chat IPA <span style="color:#9b9b9b;font-weight:500">2.0</span></span></div>
+      <div class="brand"><span class="brand-mark">C</span><span>Chat IPA <span style="color:#9b9b9b;font-weight:500">2.0</span></span></div>
       <button class="icon-btn" id="closeSidebar" type="button" aria-label="Close sidebar">◧</button>
     </div>
     <button class="side-btn primary" id="newChat" type="button"><span class="glyph">＋</span> New chat</button>
@@ -198,7 +198,7 @@
   <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
     <div class="modal-head">
       <button class="modal-close" id="closeAccountModal" type="button" aria-label="Close account window">✕</button>
-      <div class="account-brandmark" aria-hidden="true">R</div>
+      <div class="account-brandmark" aria-hidden="true">C</div>
       <h2 id="accountModalTitle">Welcome to Chat IPA</h2>
       <p>Log in or create an account to continue</p>
     </div>
@@ -494,7 +494,7 @@
   document.getElementById('settings').addEventListener('click',()=>alert('Chat IPA tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
   document.getElementById('memory').addEventListener('click',()=>{
     const current=savedMemory.join('\n');
-    const action=prompt('Edit your local RYDON memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
+    const action=prompt('Edit your local Chat IPA memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
     if(action===null)return;
     if(action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Local memory erased.';return}
     savedMemory=action.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.slice(0,500)).slice(-30);
