@@ -369,3 +369,18 @@ def test_local_development_keeps_fallback_secret():
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "development-only-change-me"
 
+
+
+def test_publication_routes_are_available():
+    test_client = client()
+    robots = test_client.get("/robots.txt")
+    sitemap = test_client.get("/sitemap.xml")
+    privacy = test_client.get("/privacy")
+
+    assert robots.status_code == 200
+    assert "Sitemap: https://rydon-ai-2.onrender.com/sitemap.xml" in robots.get_data(as_text=True)
+    assert sitemap.status_code == 200
+    assert "https://rydon-ai-2.onrender.com/privacy" in sitemap.get_data(as_text=True)
+    assert privacy.status_code == 200
+    assert "Chat IPA Privacy Policy" in privacy.get_data(as_text=True)
+    assert "provider" in privacy.get_data(as_text=True).lower()

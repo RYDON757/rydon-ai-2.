@@ -1,6 +1,6 @@
-# RYDON AI 2.0 — Website Edition
+# Chat IPA — AI assistant web app
 
-A responsive browser-based RYDON AI assistant with chat history, per-browser profile memory, and browser voice features. It can use either a hosted OpenAI-compatible model API (recommended for public deployment) or local Ollama for local development.
+Chat IPA is a responsive browser-based AI assistant with chat history, per-browser profile memory, and browser voice features. The current public deployment is https://rydon-ai-2.onrender.com/. It can use either a hosted OpenAI-compatible model API (recommended for public deployment) or local Ollama for local development.
 
 ## Deploy publicly with Render
 
