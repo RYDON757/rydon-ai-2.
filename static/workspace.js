@@ -8,6 +8,12 @@
   nav.className = 'workspace-nav';
   nav.innerHTML = `
     <div class="workspace-divider"></div>
+    <button class="side-btn" type="button" data-workspace="images"><span class="glyph">▧</span> Images</button>
+    <button class="side-btn" type="button" data-workspace="library"><span class="glyph">▤</span> Library</button>
+    <button class="side-btn" type="button" data-workspace="projects"><span class="glyph">▱</span> Projects</button>
+    <button class="side-btn" type="button" data-workspace="remote"><span class="glyph">⌘</span> Remote</button>
+    <button class="side-btn" type="button" data-workspace="schedule"><span class="glyph">◷</span> Scheduled</button>
+    <button class="side-btn" type="button" data-workspace="plugins"><span class="glyph">◎</span> Plugins</button>
     <button class="side-btn" type="button" data-workspace="codex"><span class="glyph">⌘</span> Codex <span class="nav-meta">Code</span></button>
     <button class="side-btn" type="button" data-workspace="schedule"><span class="glyph">◷</span> Schedule</button>
     <button class="side-btn" type="button" data-workspace="library"><span class="glyph">▤</span> Library</button>
