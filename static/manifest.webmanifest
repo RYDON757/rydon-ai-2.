@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "RYDON AI 2.0",
-  "short_name": "RYDON AI",
+  "name": "Chat IPA",
+  "short_name": "Chat IPA",
   "description": "Your personal AI assistant for chat, voice, documents and web search.",
   "lang": "en",
   "start_url": "/",
