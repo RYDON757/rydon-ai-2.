@@ -135,6 +135,31 @@ def test_account_registration_validates_password_and_email():
     assert bad_email.status_code == 400
 
 
+def test_password_reset_page_loads():
+    response = client().get("/reset-password")
+    assert response.status_code == 200
+    assert b"Send reset link" in response.data
+    assert b"Update password" in response.data
+
+
+def test_password_reset_rejects_invalid_token():
+    response = client().post("/api/auth/password-reset/confirm", json={
+        "token": "invalid-reset-token-that-is-long-enough-to-check",
+        "password": "a-strong-new-password",
+    })
+    assert response.status_code == 400
+    assert "invalid or expired" in response.get_json()["error"]
+
+
+def test_password_reset_rejects_short_new_password():
+    response = client().post("/api/auth/password-reset/confirm", json={
+        "token": "invalid-reset-token-that-is-long-enough-to-check",
+        "password": "short",
+    })
+    assert response.status_code == 400
+    assert "between 10 and 256" in response.get_json()["error"]
+
+
 def test_paid_checkout_requires_login_and_configuration(monkeypatch):
     for name in (
         "STRIPE_SECRET_KEY", "STRIPE_PRICE_PLUS",
