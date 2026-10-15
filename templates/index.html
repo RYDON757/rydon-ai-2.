@@ -4,26 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#212121">
-  <meta name="application-name" content="Chat IPA">
+  <meta name="application-name" content="RYDON AI">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Chat IPA">
+  <meta name="apple-mobile-web-app-title" content="RYDON AI">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Chat IPA — your personal AI assistant for chat, voice, documents and web search.">
+  <meta name="description" content="RYDON AI — your personal AI assistant for chat, voice, documents and web search.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://rydon-ai-2.onrender.com/">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Chat IPA">
-  <meta property="og:title" content="Chat IPA — Your Personal AI Assistant">
-  <meta property="og:description" content="Chat with Chat IPA, use voice features, work with documents, and search the web.">
+  <meta property="og:site_name" content="RYDON AI">
+  <meta property="og:title" content="RYDON AI — Your Personal AI Assistant">
+  <meta property="og:description" content="Chat with RYDON AI, use voice features, work with documents, and search the web.">
   <meta property="og:url" content="https://rydon-ai-2.onrender.com/">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Chat IPA — Your Personal AI Assistant">
-  <meta name="twitter:description" content="Chat with Chat IPA, use voice features, work with documents, and search the web.">
+  <meta name="twitter:title" content="RYDON AI — Your Personal AI Assistant">
+  <meta name="twitter:description" content="Chat with RYDON AI, use voice features, work with documents, and search the web.">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Chat IPA",
+    "name": "RYDON AI",
     "url": "https://rydon-ai-2.onrender.com/",
     "description": "A browser-based AI assistant for chat, voice, document help and web search.",
     "applicationCategory": "UtilitiesApplication",
@@ -34,7 +34,7 @@
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="icon" href="/static/rydon-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-  <title>Chat IPA</title>
+  <title>RYDON AI</title>
   <style>
     :root{color-scheme:dark;--bg:#212121;--sidebar:#171717;--panel:#2f2f2f;--panel2:#262626;--line:#3c3c3c;--text:#f5f5f5;--muted:#aaa;--accent:#10a37f}
     *{box-sizing:border-box}html,body{height:100%;width:100%;margin:0}
@@ -165,6 +165,41 @@
     .account-summary strong{display:block;font-size:1rem}.account-summary span{color:#aaa;font-size:.84rem}
     @media(max-width:650px){.plan-grid{grid-template-columns:1fr}.account-modal{padding:26px 20px 22px;border-radius:22px}.top-actions .account-btn{font-size:.74rem;padding:7px 8px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+  
+    /* RYDON AI visual refresh: match the approved dark mobile mockup */
+    :root{--bg:#000;--sidebar:#090b10;--panel:#171b24;--panel2:#10131a;--line:#252a35;--text:#f7f8fc;--muted:#9ca7bd;--accent:#4b55ff}
+    body,.app,.main{background:#000}
+    .sidebar{background:linear-gradient(160deg,#0b0e14 0%,#07090d 100%);border-right-color:#252a35}
+    .brand-mark,.welcome-mark{background:linear-gradient(135deg,#3977ff 0%,#543bff 100%);box-shadow:0 8px 30px #293dff30}
+    .side-btn.primary{background:#171d2b;border-color:#252d43}
+    .side-btn:hover,.icon-btn:hover,.chat-item:hover{background:#171c28}
+    .side-btn.active,.side-btn[aria-current="page"]{background:#192033;border-color:#202a43}
+    .search-wrap #searchChats{background:#121620;border-color:#282e3b}
+    .workspace-nav .workspace-divider{border-color:#2a3040}
+    .suggestions{gap:10px}
+    .suggestions button,.suggestion,.suggestion-card{background:linear-gradient(145deg,#10141c,#090b10);border:1px solid #1d2330;border-radius:22px;transition:background .18s,border-color .18s,transform .18s}
+    .suggestions button:hover,.suggestion:hover,.suggestion-card:hover{background:#171c29;border-color:#333e5c;transform:translateY(-1px)}
+    .composer-shell{background:linear-gradient(110deg,#1a1f2b,#11151d);border:1px solid #2d3547;border-radius:28px;box-shadow:0 12px 38px #0007}
+    #message{color:#f7f8fc}
+    #message::placeholder{color:#8590aa}
+    .icon-btn,.side-btn{border-radius:13px}
+    .chat-item{border-radius:10px}
+    .workspace-drawer{background:#0d1017;border-color:#2a3040}
+    .workspace-drawer-head{background:linear-gradient(135deg,#202b52,transparent 65%);border-color:#2a3040}
+    .workspace-drawer-head #workspaceClose{background:#171c28;border-color:#30384a}
+    @media(max-width:760px){
+      :root{--bg:#000;--sidebar:#080b10;--panel:#171b24}
+      .sidebar{background:linear-gradient(160deg,#0b0e14,#07090d);border-right:1px solid #252a35}
+      .welcome{margin-top:clamp(48px,13vh,110px);padding:0 5px}
+      .welcome-mark{width:66px;height:66px;border-radius:22px;font-size:30px}
+      .welcome h1{font-size:2rem;letter-spacing:-.045em}
+      .welcome p{color:#a2abc0}
+      .suggestions{gap:9px}
+      .suggestions button,.suggestion,.suggestion-card{min-height:64px;border-radius:20px;text-align:left;padding:15px}
+      .composer-area{padding-left:12px;padding-right:12px}
+      .composer-shell{padding:9px 10px 8px;border-radius:28px}
+    }
+
   </style>
   <link rel="stylesheet" href="/static/workspace.css?v=2">
   <link rel="stylesheet" href="/static/window-refresh.css?v=1">
@@ -173,7 +208,7 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand-row">
-      <div class="brand"><span class="brand-mark">C</span><span>Chat IPA <span style="color:#9b9b9b;font-weight:500">2.0</span></span></div>
+      <div class="brand"><span class="brand-mark">C</span><span>RYDON AI <span style="color:#9b9b9b;font-weight:500">2.0</span></span></div>
       <button class="icon-btn" id="closeSidebar" type="button" aria-label="Close sidebar">◧</button>
     </div>
     <button class="side-btn primary" id="newChat" type="button"><span class="glyph">＋</span> New chat</button>
@@ -185,14 +220,14 @@
       <button class="side-btn" id="memory" type="button"><span class="glyph">✳</span> Saved memory</button>
       <a class="side-btn" href="/studio" style="text-decoration:none"><span class="glyph">✦</span> Creative Studio</a>
       <button class="side-btn" id="settings" type="button"><span class="glyph">⚙</span> Settings & tools</button>
-      <div class="profile"><div class="avatar">I</div><div><div style="font-weight:650">IPOLITE SANDE ASANGAI</div><div style="color:#888;font-size:.74rem">Chat IPA owner</div></div></div>
+      <div class="profile"><div class="avatar">I</div><div><div style="font-weight:650">IPOLITE SANDE ASANGAI</div><div style="color:#888;font-size:.74rem">RYDON AI owner</div></div></div>
     </div>
   </aside>
   <main class="main">
     <header class="topbar">
       <div style="display:flex;align-items:center;gap:10px;min-width:0">
         <button class="icon-btn mobile-menu" id="openSidebar" type="button" aria-label="Open sidebar">☰</button>
-        <div><div class="top-title">Chat IPA <span style="color:#999;font-weight:450">2.0</span></div><div class="top-sub">Your personal AI assistant</div></div>
+        <div><div class="top-title">RYDON AI <span style="color:#999;font-weight:450">2.0</span></div><div class="top-sub">Your personal AI assistant</div></div>
       </div>
       <div class="top-actions"><button class="account-btn" id="accountButton" type="button">Log in / Create account</button><span class="status-pill" id="connectionBadge">● Ready</span><button class="icon-btn" id="clear" type="button" title="Clear current chat" aria-label="Clear current chat">⌫</button></div>
     </header>
@@ -200,7 +235,7 @@
     <section class="composer-area">
       <div class="composer-shell">
         <form id="form">
-          <textarea id="message" rows="1" placeholder="Message Chat IPA..." autocomplete="off" required maxlength="4000"></textarea>
+          <textarea id="message" rows="1" placeholder="Message RYDON AI..." autocomplete="off" required maxlength="4000"></textarea>
           <button class="send-btn" id="send" type="submit" title="Send message" aria-label="Send message">↑</button>
         </form>
         <div class="composer-tools">
@@ -217,7 +252,7 @@
       </div>
       <div class="statusline"><span id="fileStatus">No document attached</span><span id="status">Ready</span></div>
     </section>
-    <footer class="legal">Chat IPA can make mistakes. Check important information. · <a href="/privacy">Privacy</a> · <a href="/copyright">© 2026 IPOLITE SANDE ASANGAI · Copyright &amp; ownership</a></footer>
+    <footer class="legal">RYDON AI can make mistakes. Check important information. · <a href="/privacy">Privacy</a> · <a href="/copyright">© 2026 IPOLITE SANDE ASANGAI · Copyright &amp; ownership</a></footer>
   </main>
 </div>
 <div class="modal-backdrop" id="accountBackdrop" hidden>
@@ -225,7 +260,7 @@
     <div class="modal-head">
       <button class="modal-close" id="closeAccountModal" type="button" aria-label="Close account window">✕</button>
       <div class="account-brandmark" aria-hidden="true">C</div>
-      <h2 id="accountModalTitle">Welcome to Chat IPA</h2>
+      <h2 id="accountModalTitle">Welcome to RYDON AI</h2>
       <p>Log in or create an account to continue</p>
     </div>
     <div id="accountSignedOut">
@@ -411,10 +446,10 @@
     chat.scrollTop=chat.scrollHeight;
   }
   function loadConversation(id){
-    activeId=id;const c=activeConversation();if(!c)return;history=c.messages.slice(-60);documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message Chat IPA...';renderMessages();renderChatList();sidebar.classList.remove('mobile-open');
+    activeId=id;const c=activeConversation();if(!c)return;history=c.messages.slice(-60);documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message RYDON AI...';renderMessages();renderChatList();sidebar.classList.remove('mobile-open');
   }
   function newChat(){
-    activeId=null;history=[];documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message Chat IPA...';showWelcome();renderChatList();sidebar.classList.remove('mobile-open');input.focus();
+    activeId=null;history=[];documentContext='';fileInput.value='';fileStatus.textContent='No document attached';input.placeholder='Message RYDON AI...';showWelcome();renderChatList();sidebar.classList.remove('mobile-open');input.focus();
   }
   function saveCurrent(){
     if(!history.length)return;
@@ -437,9 +472,9 @@
     createImageButton.classList.toggle('mode-active', imageMode === 'generate');
     createImageButton.setAttribute('aria-pressed', String(imageMode === 'generate'));
     editImageButton.classList.toggle('mode-active', imageMode === 'edit');
-    input.placeholder = imageMode === 'generate' ? 'Describe the image to create…' : imageMode === 'edit' ? 'Describe how to edit your photo…' : (selectedImageFile ? 'Describe the edit for your photo…' : 'Message Chat IPA...');
+    input.placeholder = imageMode === 'generate' ? 'Describe the image to create…' : imageMode === 'edit' ? 'Describe how to edit your photo…' : (selectedImageFile ? 'Describe the edit for your photo…' : 'Message RYDON AI...');
     status.textContent = imageMode === 'generate' ? 'Image creation mode · describe what you want' : imageMode === 'edit' ? 'Photo editing mode · choose a photo' : 'Ready';
-    if (!imageMode && !selectedImageFile) input.placeholder = 'Message Chat IPA...';
+    if (!imageMode && !selectedImageFile) input.placeholder = 'Message RYDON AI...';
   }
   createImageButton.addEventListener('click',()=>{
     documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
@@ -455,7 +490,7 @@
       status.textContent='Document creation mode · describe the content and format';
     }else{
       createDocumentButton.classList.remove('mode-active');
-      input.placeholder='Message Chat IPA...';status.textContent='Ready';
+      input.placeholder='Message RYDON AI...';status.textContent='Ready';
     }
     createDocumentButton.setAttribute('aria-pressed',String(documentMode));
   });
@@ -519,10 +554,10 @@
   document.getElementById('openSidebar').addEventListener('click',()=>sidebar.classList.toggle('mobile-open'));
   searchChats.addEventListener('input',renderChatList);
   webSearch.addEventListener('click',()=>{webEnabled=!webEnabled;webSearch.classList.toggle('active',webEnabled);webSearch.setAttribute('aria-pressed',String(webEnabled));status.textContent=webEnabled?'Web search enabled':'Web search disabled'});
-  document.getElementById('settings').addEventListener('click',()=>alert('Chat IPA tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
+  document.getElementById('settings').addEventListener('click',()=>alert('RYDON AI tools:\n\n• Web search: toggle it in the message box\n• Attach: upload a TXT or PDF (up to 5 MB)\n• Voice: use your microphone (browser permission required)\n• Read aloud: use the speaker button under an AI reply\n• Saved memory and chat history are stored in this browser.'));
   document.getElementById('memory').addEventListener('click',()=>{
     const current=savedMemory.join('\n');
-    const action=prompt('Edit your local Chat IPA memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
+    const action=prompt('Edit your local RYDON AI memory. One preference per line. This stays in this browser.\n\nType CLEAR to erase it, or edit the lines below:',current);
     if(action===null)return;
     if(action.trim().toUpperCase()==='CLEAR'){savedMemory=[];localStorage.removeItem(MEMORY_KEY);status.textContent='Local memory erased.';return}
     savedMemory=action.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>x.slice(0,500)).slice(-30);
@@ -562,7 +597,7 @@
         addMessage(content,'ai');await appendDocumentExports(content);
         history.push({role:'assistant',content:content});
         documentMode=false;createDocumentButton.classList.remove('mode-active');createDocumentButton.setAttribute('aria-pressed','false');
-        input.placeholder='Message Chat IPA...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
+        input.placeholder='Message RYDON AI...';status.textContent='Document ready · download it below';badge.textContent='● Connected';
       }else if(runImageMode==='generate'){
         const response=await fetch('/api/studio/image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:message})});
         const data=await response.json();if(!response.ok)throw new Error(data.error||'Image generation failed.');
@@ -570,7 +605,7 @@
         if(!src)throw new Error('The provider returned no image.');
         addMessage('Here is your generated image.','ai');appendImageResult(src,'rydon-generated-image.png');
         history.push({role:'assistant',content:'Here is your generated image. [Image shown in this chat]'});
-        imageMode='';createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');input.placeholder='Message Chat IPA...';
+        imageMode='';createImageButton.classList.remove('mode-active');createImageButton.setAttribute('aria-pressed','false');input.placeholder='Message RYDON AI...';
         status.textContent='Image generated';badge.textContent='● Connected';
       }else if(imageMode==='edit'){
         if(!selectedImageFile)throw new Error('Choose a photo with Edit photo, then describe the changes.');
