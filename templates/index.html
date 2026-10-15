@@ -540,7 +540,7 @@
         selectedImageFile=null;imageFileInput.value='';fileStatus.textContent='No image attached';
         status.textContent='Photo edit complete';badge.textContent='● Connected';
       }else{
-        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled,saved_memory:savedMemory.map((item,i)=>(i+1)+'. '+item).join('\\n')})});
+        const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:history.slice(-25,-1),document_context:documentContext,web_search:webEnabled})});
         const data=await res.json();const reply=data.reply||'No response received.';
         if(!res.ok)throw new Error(reply);
         addMessage(reply,'ai');history.push({role:'assistant',content:reply});
