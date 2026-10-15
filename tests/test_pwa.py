@@ -48,7 +48,7 @@ def test_service_worker_caches_mobile_icons_and_skips_api_requests():
 
     assert response.status_code == 200
     script = response.get_data(as_text=True)
-    assert "rydon-ai-shell-v3" in script
+    assert "chat-ipa-shell-v4" in script
     assert "self.addEventListener('install'" in script
     assert "url.pathname.startsWith('/api/')" in script
     assert "self.clients.claim()" in script
