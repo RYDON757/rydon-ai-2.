@@ -66,10 +66,15 @@
     .suggestion:hover{background:#303030;border-color:#555}
     .suggestion strong{display:block;font-size:.9rem;margin-bottom:4px}.suggestion small{color:#aaa;font-size:.8rem}
     .messages{max-width:790px;margin:0 auto}
-    .msg-row{display:flex;gap:12px;margin:0 0 25px;align-items:flex-start}
+    .msg-row{display:flex;gap:12px;margin:0 0 25px;align-items:flex-start;width:100%}
     .msg-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;font-size:.83rem;font-weight:750}
     .msg-avatar.user-avatar{background:#555}.msg-avatar.ai-avatar{background:#10a37f;color:white}
     .msg-content{min-width:0;flex:1;padding-top:3px;line-height:1.72;font-size:.96rem;white-space:pre-wrap;overflow-wrap:anywhere}
+    .user-message-row{justify-content:flex-end}
+    .user-message-row .msg-avatar{display:none}
+    .user-message-row .msg-content{flex:0 1 auto;max-width:min(78%,640px);padding:10px 15px;border:1px solid #414141;border-radius:20px;background:#303030;line-height:1.55}
+    .assistant-message-row .msg-content{max-width:100%}
+    @media(max-width:600px){.user-message-row .msg-content{max-width:90%}}
     .msg-actions{display:flex;gap:5px;margin-top:8px}
     .msg-actions button{background:transparent;border:1px solid transparent;color:#999;padding:4px 7px;border-radius:7px;font-size:.76rem}
     .msg-actions button:hover{border-color:#454545;color:#eee}
@@ -349,7 +354,7 @@
     wrap.append(mark,h,p,proactive,suggestions);chat.appendChild(wrap);
   }
   function addMessage(text,who){
-    const row=document.createElement('div');row.className='msg-row';
+    const row=document.createElement('div');row.className='msg-row '+(who==='user'?'user-message-row':'assistant-message-row');
     const av=document.createElement('div');av.className='msg-avatar '+(who==='user'?'user-avatar':'ai-avatar');av.textContent=who==='user'?'I':'R';
     const body=document.createElement('div');body.className='msg-content';body.textContent=text;
     row.append(av,body);
