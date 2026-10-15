@@ -20,8 +20,8 @@
 </section>
 <section class="card"><h2>🎨 Image generator</h2><p>Describe a scene, character, poster, logo concept, wallpaper, illustration, or photo-style image.</p>
 <label for="imagePrompt">Image description</label><textarea class="field" id="imagePrompt" placeholder="Example: cinematic sunset over a Kenyan savannah, warm golden light, detailed digital illustration..."></textarea>
-<div class="actions"><button class="btn primary" id="makeImage">Generate image</button><button class="btn" id="clearImage">Clear</button></div><div class="status" id="imageStatus" role="status"></div><div id="imageResult"></div>
-<p class="small">Image generation needs an image-capable provider configured on the server. Never put provider API keys in this page.</p>
+<div class="actions"><button class="btn primary" id="makeImage">Generate AI image</button><button class="btn" id="makeFreeImage">Make free graphic</button><button class="btn" id="clearImage">Clear</button></div><div class="status" id="imageStatus" role="status"></div><div id="imageResult"></div>
+<p class="small">AI images require a configured provider and may use paid credits. “Make free graphic” runs in your browser with no API key, account, or usage charge; it creates a downloadable SVG poster-style design, not photorealistic AI art.</p>
 </section>
 
 <section class="card"><h2>🪄 Photo editor</h2><p>Upload a photo and describe the change. For example: “Give me neat dreadlocks, keep my face and skin tone unchanged.”</p>
@@ -78,6 +78,32 @@ $('editPhotoBtn').addEventListener('click',async()=>{
   finally{btn.disabled=false}
 });
 $('clearEdit').addEventListener('click',()=>{editFile.value='';$('editPrompt').value='';$('editOriginalWrap').replaceChildren();$('editResult').replaceChildren();$('editStatus').textContent=''});
+
+
+// Free local graphic mode: runs entirely in this browser; no server/API request.
+$('makeFreeImage').addEventListener('click',()=>{
+  const prompt=$('imagePrompt').value.trim();
+  if(!prompt){$('imageStatus').textContent='Describe the graphic first.';return}
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  const words=prompt.replace(/\s+/g,' ').split(' ');
+  const titleLines=[];let line='';
+  for(const word of words.slice(0,35)){
+    if((line+' '+word).trim().length>24){if(line)titleLines.push(line);line=word}
+    else line=(line+' '+word).trim();
+  }
+  if(line)titleLines.push(line);
+  const title=titleLines.slice(0,5);
+  const titleSvg=title.map((t,i)=>'<text x="72" y="'+(330+i*58)+'" font-family="Arial,sans-serif" font-size="'+(i===0?'48':'38')+'" font-weight="'+(i===0?'700':'500')+'" fill="#fff">'+esc(t)+'</text>').join('');
+  const sub=esc('A RYDON AI CREATION • LOCAL FREE GRAPHIC');
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#102a43"/><stop offset=".52" stop-color="#5b3f8c"/><stop offset="1" stop-color="#e06c75"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#f8d477" stop-opacity=".8"/><stop offset="1" stop-color="#f8d477" stop-opacity="0"/></radialGradient></defs><rect width="1080" height="1350" fill="url(#bg)"/><circle cx="880" cy="180" r="360" fill="url(#glow)"/><circle cx="900" cy="1080" r="270" fill="#0a1727" opacity=".25"/><path d="M0 920 Q260 760 500 930 T1080 860 V1350 H0Z" fill="#0b1725" opacity=".42"/><path d="M0 1030 Q320 850 620 1030 T1080 980 V1350 H0Z" fill="#101b32" opacity=".55"/><rect x="52" y="52" width="976" height="1246" rx="34" fill="none" stroke="#fff" stroke-opacity=".34" stroke-width="2"/><text x="72" y="130" font-family="Arial,sans-serif" font-size="28" letter-spacing="6" fill="#fff" opacity=".85">RYDON AI / CREATIVE STUDIO</text><path d="M72 190 H330" stroke="#f8d477" stroke-width="7" stroke-linecap="round"/>'+titleSvg+'<text x="72" y="1130" font-family="Arial,sans-serif" font-size="20" letter-spacing="2" fill="#fff" opacity=".8">'+sub+'</text><text x="72" y="1180" font-family="Arial,sans-serif" font-size="18" fill="#fff" opacity=".65">Customize the prompt and create another variation.</text><circle cx="900" cy="1240" r="10" fill="#f8d477"/><circle cx="935" cy="1240" r="10" fill="#fff" opacity=".6"/><circle cx="970" cy="1240" r="10" fill="#fff" opacity=".3"/></svg>';
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+  $('imageResult').replaceChildren();
+  const img=document.createElement('img');img.className='image-preview';img.alt='Free locally generated RYDON poster graphic';img.src=url;
+  $('imageResult').appendChild(img);
+  const link=document.createElement('a');link.className='btn';link.textContent='Download free graphic (SVG)';link.href=url;link.download='rydon-free-graphic.svg';link.style.display='inline-block';link.style.marginTop='10px';$('imageResult').appendChild(link);
+  const note=document.createElement('p');note.className='small';note.textContent='Created locally in your browser. SVG stays sharp when resized; this is a graphic template, not generated photographic artwork.';$('imageResult').appendChild(note);
+  $('imageStatus').textContent='Free graphic created — no API request or credits used.';
+});
 
 $('clearImage').addEventListener('click',()=>{$('imagePrompt').value='';$('imageResult').replaceChildren();$('imageStatus').textContent=''});
 </script></body></html>
