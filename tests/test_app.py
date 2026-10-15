@@ -135,6 +135,80 @@ def test_account_registration_validates_password_and_email():
     assert bad_email.status_code == 400
 
 
+def test_password_reset_page_loads():
+    response = client().get("/reset-password")
+    assert response.status_code == 200
+    assert b"Send reset link" in response.data
+    assert b"Update password" in response.data
+
+
+def test_password_reset_changes_password_without_deleting_account(monkeypatch):
+    import uuid
+    from urllib.parse import urlparse, parse_qs
+
+    c = client()
+    email = "reset-" + uuid.uuid4().hex + "@example.com"
+    registered = c.post("/api/auth/register", json={
+        "name": "Reset Test",
+        "email": email,
+        "password": "a-strong-old-password",
+    })
+    assert registered.status_code == 201
+
+    sent = {}
+    monkeypatch.setattr(
+        rydon_app,
+        "send_password_reset_email",
+        lambda recipient, reset_url: sent.update(recipient=recipient, url=reset_url),
+    )
+    requested = c.post("/api/auth/password-reset/request", json={"email": email})
+    assert requested.status_code == 200
+    assert sent["recipient"] == email
+    token = parse_qs(urlparse(sent["url"]).query)["token"][0]
+
+    changed = c.post("/api/auth/password-reset/confirm", json={
+        "token": token,
+        "password": "a-strong-new-password",
+    })
+    assert changed.status_code == 200
+
+    old_login = c.post("/api/auth/login", json={
+        "email": email,
+        "password": "a-strong-old-password",
+    })
+    assert old_login.status_code == 401
+    new_login = c.post("/api/auth/login", json={
+        "email": email,
+        "password": "a-strong-new-password",
+    })
+    assert new_login.status_code == 200
+    assert new_login.get_json()["account"]["email"] == email
+
+    reused = c.post("/api/auth/password-reset/confirm", json={
+        "token": token,
+        "password": "another-strong-password",
+    })
+    assert reused.status_code == 400
+
+
+def test_password_reset_rejects_invalid_token():
+    response = client().post("/api/auth/password-reset/confirm", json={
+        "token": "invalid-reset-token-that-is-long-enough-to-check",
+        "password": "a-strong-new-password",
+    })
+    assert response.status_code == 400
+    assert "invalid or expired" in response.get_json()["error"]
+
+
+def test_password_reset_rejects_short_new_password():
+    response = client().post("/api/auth/password-reset/confirm", json={
+        "token": "invalid-reset-token-that-is-long-enough-to-check",
+        "password": "short",
+    })
+    assert response.status_code == 400
+    assert "between 10 and 256" in response.get_json()["error"]
+
+
 def test_paid_checkout_requires_login_and_configuration(monkeypatch):
     for name in (
         "STRIPE_SECRET_KEY", "STRIPE_PRICE_PLUS",
