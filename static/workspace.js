@@ -12,13 +12,10 @@
     <button class="side-btn" type="button" data-workspace="library"><span class="glyph">▤</span> Library</button>
     <button class="side-btn" type="button" data-workspace="projects"><span class="glyph">▱</span> Projects</button>
     <button class="side-btn" type="button" data-workspace="remote"><span class="glyph">⌘</span> Remote</button>
-    <button class="side-btn" type="button" data-workspace="schedule"><span class="glyph">◷</span> Scheduled</button>
+    <button class="side-btn" type="button" data-workspace="schedule"><span class="glyph">◷</span> Schedule</button>
     <button class="side-btn" type="button" data-workspace="plugins"><span class="glyph">◎</span> Plugins</button>
     <button class="side-btn" type="button" data-workspace="codex"><span class="glyph">⌘</span> Codex <span class="nav-meta">Code</span></button>
-    <button class="side-btn" type="button" data-workspace="schedule"><span class="glyph">◷</span> Schedule</button>
-    <button class="side-btn" type="button" data-workspace="library"><span class="glyph">▤</span> Library</button>
-    <button class="side-btn" type="button" data-workspace="plugins"><span class="glyph">▦</span> Plugins</button>
-    <button class="side-btn" type="button" data-workspace="instructions"><span class="glyph">☷</span> Recent instructions</button>
+    <button class="side-btn" type="button" data-workspace="instructions"><span class="glyph">☷</span> Recent Instructions</button>
     <button class="side-btn" type="button" data-workspace="clear"><span class="glyph">⌫</span> Clear app data</button>`;
   const recentLabel = Array.from(sidebar.querySelectorAll('.section-label')).find(x => x.textContent.trim().toLowerCase() === 'recent');
   if (recentLabel) recentLabel.insertAdjacentElement('beforebegin', nav);
@@ -39,7 +36,7 @@
     .workspace-drawer-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,32px);background:rgba(0,0,0,.66);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
     .workspace-drawer-backdrop[hidden]{display:none!important}
     .workspace-drawer{width:min(900px,100%);max-height:min(88dvh,900px);overflow:hidden;display:flex;flex-direction:column;background:#202020;border:1px solid #454545;border-radius:22px;box-shadow:0 28px 100px rgba(0,0,0,.55);color:#f5f5f5;animation:rydonWorkspaceIn .18s ease-out}
-    .workspace-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:25px 28px 21px;border-bottom:1px solid #383838;background:linear-gradient(135deg,rgba(16,163,127,.13),transparent 60%)}
+    .workspace-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:25px 28px 21px;border-bottom:1px solid #383838;background:linear-gradient(135deg,rgba(75,85,255,.16),transparent 60%)}
     .workspace-drawer-head h2{margin:0 0 7px;font-size:clamp(1.35rem,3vw,1.8rem);font-weight:720;letter-spacing:-.04em}
     .workspace-drawer-head p{margin:0;color:#aaa;font-size:.92rem;line-height:1.5;max-width:620px}
     #workspaceClose{flex:0 0 38px;width:38px;height:38px;border-radius:12px;border:1px solid #444;background:#2a2a2a;color:#ddd;font-size:18px}
@@ -52,13 +49,13 @@
     .workspace-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .workspace-row>div{flex:1;min-width:130px}
     .workspace-input,.workspace-textarea{display:block;width:100%;max-width:100%;margin:7px 0 16px;padding:12px 13px;color:#f5f5f5;background:#171717;border:1px solid #454545;border-radius:11px;outline:none}
-    .workspace-input:focus,.workspace-textarea:focus{border-color:#10a37f;box-shadow:0 0 0 3px rgba(16,163,127,.15)}
+    .workspace-input:focus,.workspace-textarea:focus{border-color:#4b55ff;box-shadow:0 0 0 3px rgba(75,85,255,.15)}
     .workspace-textarea{min-height:105px;resize:vertical;line-height:1.5}
     .workspace-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 13px;border:1px solid #484848;border-radius:10px;background:#303030;color:#f4f4f4;text-decoration:none;font-size:.86rem;font-weight:600;transition:background .15s,border-color .15s,transform .15s}
     .workspace-action:hover{background:#3a3a3a;border-color:#606060}
     .workspace-action:active{transform:scale(.985)}
-    .workspace-action.primary{background:#10a37f;border-color:#10a37f;color:white}
-    .workspace-action.primary:hover{background:#0e916f;border-color:#0e916f}
+    .workspace-action.primary{background:#4b55ff;border-color:#4b55ff;color:white}
+    .workspace-action.primary:hover{background:#3c45e6;border-color:#3c45e6}
     .workspace-action:disabled{opacity:.55;cursor:wait}
     .workspace-empty{padding:26px 18px;text-align:center;border:1px dashed #484848;border-radius:14px;color:#aaa;background:rgba(255,255,255,.015)}
     .workspace-note{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
@@ -66,7 +63,7 @@
     .workspace-nav .workspace-divider{height:1px;background:#303030;margin:7px 2px 9px}
     .workspace-nav [data-workspace]{width:100%;min-height:40px;border-radius:10px;font-size:.9rem}
     .workspace-nav [data-workspace]:hover{background:#292929}
-    .workspace-nav [data-workspace]:focus-visible,.workspace-action:focus-visible,#workspaceClose:focus-visible{outline:2px solid #10a37f;outline-offset:2px}
+    .workspace-nav [data-workspace]:focus-visible,.workspace-action:focus-visible,#workspaceClose:focus-visible{outline:2px solid #4b55ff;outline-offset:2px}
     .workspace-nav .glyph{display:inline-grid;place-items:center;width:22px;height:22px;color:#c8c8c8;font-size:1rem}
     .workspace-nav .nav-meta{margin-left:auto;color:#aaa;font-size:.72rem;border:1px solid #414141;border-radius:6px;padding:2px 6px}
     @keyframes rydonWorkspaceIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
