@@ -13,7 +13,7 @@ def test_pwa_manifest_is_valid_and_points_to_existing_icons():
     assert manifest["start_url"] == "/"
     assert manifest["scope"] == "/"
     assert manifest["display"] == "standalone"
-    assert manifest["theme_color"] == "#212121"
+    assert manifest["theme_color"] == "#000000"
 
     png_sizes = {"192x192": (192, 192), "512x512": (512, 512)}
     for icon in manifest["icons"]:
